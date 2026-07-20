@@ -1,0 +1,2091 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartDrain - Premium Flood & Drainage Monitoring System</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
+    <!-- Dependencies via Production CDNs -->
+    <!-- Firebase JS SDK (Compat mode to facilitate single-page execution) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <!-- Chart.js for live sensor tracking graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* =========================================================================
+           VIRTUAL DIRECTORY: /css/style.css
+           ========================================================================= */
+        :root {
+            --bg-gradient: radial-gradient(circle at 50% 0%, #151b2e 0%, #0a0d16 100%);
+            --glass-bg: rgba(20, 26, 46, 0.45);
+            --glass-border: rgba(255, 255, 255, 0.07);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            --glass-glow: rgba(0, 242, 254, 0.15);
+            
+            --text-primary: #ffffff;
+            --text-secondary: #a0aec0;
+            --text-muted: #64748b;
+            
+            --color-primary: #00f2fe;     /* Cyan Glow */
+            --color-secondary: #9d4edd;   /* Purple Neon */
+            --color-success: #00e676;     /* Low Risk / Nominal */
+            --color-warning: #ffb300;     /* Warning Threshold */
+            --color-danger: #ff2e93;      /* High Threat Alert */
+            --color-neutral: #4facfe;     
+            
+            --transition-speed: 0.35s;
+            --font-main: 'Plus Jakarta Sans', sans-serif;
+            --font-mono: 'Share Tech Mono', monospace;
+        }
+
+        [data-theme="light"] {
+            --bg-gradient: radial-gradient(circle at 50% 0%, #e2e8f0 0%, #cbd5e1 100%);
+            --glass-bg: rgba(255, 255, 255, 0.45);
+            --glass-border: rgba(0, 0, 0, 0.08);
+            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.08);
+            --glass-glow: rgba(79, 172, 254, 0.1);
+            
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            
+            --color-primary: #0284c7;
+            --color-secondary: #7c3aed;
+            --color-success: #16a34a;
+            --color-warning: #d97706;
+            --color-danger: #dc2626;
+            --color-neutral: #2563eb;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: background var(--transition-speed) ease;
+        }
+
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Responsive Layout Grid */
+        header {
+            padding: 24px 4%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .brand-logo {
+            width: 38px;
+            height: 38px;
+            fill: var(--color-primary);
+        }
+        .brand-text h1 {
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            line-height: 1;
+        }
+        .brand-text p {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .system-status {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            padding: 6px 12px;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--color-success);
+            box-shadow: 0 0 8px var(--color-success);
+        }
+        .status-dot.offline {
+            background-color: var(--color-danger);
+            box-shadow: 0 0 8px var(--color-danger);
+        }
+        .status-dot.simulating {
+            background-color: var(--color-warning);
+            box-shadow: 0 0 8px var(--color-warning);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .action-btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.05);
+        }
+        .action-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+        .badge-container { position: relative; }
+        .btn-badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            background: var(--color-danger);
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        main {
+            padding: 24px 4% 80px 4%;
+            max-width: 1600px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 1100px) {
+            main { grid-template-columns: 1fr; }
+        }
+
+        .dashboard-col {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* Glassmorphism Cards */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: var(--glass-shadow);
+            transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), 
+                        border-color 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .glass-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Setup Wizard UI Overlays */
+        #setup-wizard {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(10, 13, 22, 0.98);
+            backdrop-filter: blur(40px);
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 1;
+            transition: opacity 0.5s ease;
+        }
+        #setup-wizard.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .wizard-card {
+            width: 550px;
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+        }
+        .wizard-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .wizard-step { display: none; }
+        .wizard-step.active { display: block; }
+
+        /* Dashboard Specific Modules */
+        .weather-hero {
+            background: linear-gradient(135deg, rgba(20, 30, 48, 0.8), rgba(36, 59, 85, 0.8));
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 280px;
+        }
+        .weather-hero-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .digital-clock {
+            font-family: var(--font-mono);
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1;
+            color: var(--color-primary);
+            text-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
+        }
+        .calendar-date {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-top: 4px;
+        }
+        .location-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        .location-badge svg {
+            width: 16px;
+            height: 16px;
+            fill: var(--color-primary);
+        }
+        
+        .weather-hero-bottom {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            margin-top: 32px;
+        }
+        .weather-main-temp { display: flex; align-items: flex-start; }
+        .temp-val {
+            font-size: 4.5rem;
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: -2px;
+        }
+        .temp-unit {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--color-primary);
+            margin-top: 8px;
+        }
+        .weather-summary-text {
+            display: flex;
+            flex-direction: column;
+            margin-left: 12px;
+        }
+        .weather-desc {
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-transform: capitalize;
+        }
+        .weather-feels-like {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .weather-main-icon-container {
+            width: 110px;
+            height: 110px;
+            filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.15));
+        }
+
+        .atmos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 16px;
+        }
+        .atmos-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 8px;
+        }
+        .atmos-card svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--text-secondary);
+        }
+        .atmos-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .atmos-value { font-size: 1.1rem; font-weight: 700; }
+
+        /* Search Layout */
+        .search-box { display: flex; gap: 12px; }
+        .search-input-wrapper { position: relative; flex: 1; }
+        .search-input-wrapper svg {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            fill: var(--text-muted);
+        }
+        .search-box input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 14px 16px 14px 48px;
+            color: var(--text-primary);
+            font-family: var(--font-main);
+            font-size: 0.9rem;
+            outline: none;
+            transition: 0.3s;
+        }
+        .search-box input:focus {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--color-primary);
+        }
+        .btn-search {
+            background: linear-gradient(135deg, var(--color-primary), var(--color-neutral));
+            color: #000;
+            font-weight: 700;
+            border: none;
+            padding: 0 24px;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-search:hover { filter: brightness(1.1); }
+
+        .map-section { display: flex; flex-direction: column; gap: 12px; }
+        .map-placeholder {
+            height: 180px;
+            background: radial-gradient(circle at 50% 50%, rgba(0, 242, 254, 0.1) 0%, rgba(0,0,0,0.3) 100%), 
+                        repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 21px);
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .map-grid-pin {
+            position: absolute;
+            top: 40%;
+            left: 55%;
+            width: 24px;
+            height: 24px;
+            background: rgba(0, 242, 254, 0.2);
+            border: 2px solid var(--color-primary);
+            border-radius: 50%;
+            animation: pulse-pin 2s infinite ease-out;
+        }
+        @keyframes pulse-pin {
+            0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(0, 242, 254, 0.7); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(0, 242, 254, 0); }
+            100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(0, 242, 254, 0); }
+        }
+        .map-label {
+            font-size: 0.75rem;
+            font-family: var(--font-mono);
+            color: var(--text-secondary);
+            z-index: 2;
+            background: rgba(0,0,0,0.6);
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+        }
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 8px;
+            transition: 0.2s;
+        }
+        .tab-btn.active {
+            background: rgba(255,255,255,0.08);
+            color: var(--color-primary);
+        }
+        .forecast-scroll-container {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+        .forecast-card {
+            min-width: 100px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 16px 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            text-align: center;
+        }
+        .forecast-time { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); }
+        .forecast-icon { width: 38px; height: 38px; }
+        .forecast-temp { font-size: 1.1rem; font-weight: 700; }
+        .forecast-pop { font-size: 0.7rem; color: var(--color-primary); font-weight: 600; }
+
+        /* Telemetry Interfaces */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-title svg { width: 20px; height: 20px; fill: var(--color-primary); }
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--color-danger);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--color-danger);
+        }
+
+        .telemetry-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 600px) {
+            .telemetry-grid { grid-template-columns: 1fr; }
+        }
+
+        .gauge-widget {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+        }
+        .gauge-container { position: relative; width: 140px; height: 140px; }
+        .gauge-ring { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .gauge-circle-bg { fill: none; stroke: rgba(255, 255, 255, 0.05); stroke-width: 10; }
+        .gauge-circle-fill {
+            fill: none;
+            stroke-width: 10;
+            stroke-dasharray: 377;
+            stroke-dashoffset: 377;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.3s;
+        }
+        .gauge-value-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        .gauge-num { font-family: var(--font-mono); font-size: 1.8rem; font-weight: 700; line-height: 1; }
+        .gauge-unit { font-size: 0.75rem; color: var(--text-secondary); font-weight: 500; }
+        .gauge-title { margin-top: 16px; font-size: 0.85rem; font-weight: 700; color: var(--text-secondary); }
+
+        .water-bar-container {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            height: 12px;
+            border-radius: 50px;
+            overflow: hidden;
+            margin-top: 8px;
+            border: 1px solid var(--glass-border);
+        }
+        .water-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+            border-radius: 50px;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Threat Engine Matrices */
+        .risk-display-card {
+            text-align: center;
+            background: linear-gradient(135deg, rgba(20, 26, 46, 0.6) 0%, rgba(30, 41, 59, 0.4) 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+        .risk-level-badge {
+            font-family: var(--font-mono);
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            padding: 8px 32px;
+            border-radius: 12px;
+            text-shadow: 0 0 15px currentColor;
+            transition: 0.3s;
+        }
+        .risk-level-low { color: var(--color-success); }
+        .risk-level-med { color: var(--color-warning); }
+        .risk-level-high { color: var(--color-danger); }
+        .risk-level-crit { color: #ffffff; background: var(--color-danger); }
+
+        .risk-explanation {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            max-width: 400px;
+        }
+
+        .alerts-wrapper { display: flex; flex-direction: column; gap: 12px; }
+        .alert-item {
+            background: rgba(255, 46, 147, 0.05);
+            border: 1px solid rgba(255, 46, 147, 0.15);
+            padding: 16px;
+            border-radius: 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+        }
+        .alert-item.system {
+            background: rgba(255, 179, 0, 0.05);
+            border: 1px solid rgba(255, 179, 0, 0.15);
+        }
+        .alert-item.success {
+            background: rgba(0, 230, 118, 0.05);
+            border: 1px solid rgba(0, 230, 118, 0.15);
+        }
+        .alert-icon { width: 24px; height: 24px; flex-shrink: 0; }
+        .alert-item:not(.system):not(.success) .alert-icon { fill: var(--color-danger); }
+        .alert-item.system .alert-icon { fill: var(--color-warning); }
+        .alert-item.success .alert-icon { fill: var(--color-success); }
+
+        .alert-content h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 4px; }
+        .alert-content p { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4; }
+
+        /* Timeline Activities */
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-height: 220px;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+        .timeline-item { display: flex; gap: 16px; position: relative; }
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            top: 16px;
+            left: 7px;
+            width: 2px;
+            height: calc(100% + 4px);
+            background: var(--glass-border);
+            z-index: 1;
+        }
+        .timeline-item:last-child::after { display: none; }
+        .timeline-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--color-primary);
+            border: 3px solid var(--glass-bg);
+            z-index: 2;
+            margin-top: 3px;
+            flex-shrink: 0;
+        }
+        .timeline-content { flex-grow: 1; }
+        .timeline-text { font-size: 0.8rem; font-weight: 500; }
+        .timeline-time {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            margin-top: 2px;
+        }
+
+        /* Overlay Side panels */
+        .panel-overlay {
+            position: fixed;
+            top: 0;
+            right: -450px;
+            width: 420px;
+            height: 100vh;
+            background: rgba(10, 13, 22, 0.96);
+            backdrop-filter: blur(25px);
+            border-left: 1px solid var(--glass-border);
+            z-index: 1000;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+            transition: right 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            padding: 32px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            overflow-y: auto;
+        }
+        .panel-overlay.active { right: 0; }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 16px;
+        }
+        .panel-close {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 1.5rem;
+        }
+
+        /* General Forms & Controls */
+        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+        .form-group label { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); }
+        .form-control {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 12px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            outline: none;
+            width: 100%;
+        }
+        .form-control:focus { border-color: var(--color-primary); }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--color-primary), var(--color-neutral));
+            color: #000;
+            font-weight: 700;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-primary:hover { filter: brightness(1.1); }
+
+        /* ESP32 Connected Cards */
+        .device-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
+        }
+        .device-card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            padding: 12px;
+            font-size: 0.8rem;
+        }
+        .device-card h5 { font-family: var(--font-mono); font-size: 0.85rem; margin-bottom: 6px; }
+        .device-status-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        /* Toasts and Warning Notifications */
+        .error-card-toast {
+            background: linear-gradient(135deg, rgba(220, 38, 38, 0.95), rgba(153, 27, 27, 0.95));
+            color: white;
+            padding: 16px 20px;
+            border-radius: 16px;
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            z-index: 9999;
+            transform: translateY(150%);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .error-card-toast.active { transform: translateY(0); }
+
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .mt-12 { margin-top: 12px; }
+        .gap-8 { display: flex; gap: 8px; }
+    </style>
+</head>
+<body>
+
+    <!-- Dynamic Background Element -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- SYSTEM DEPLOYMENT INSTALLATION SETUP WIZARD -->
+    <div id="setup-wizard" class="hidden">
+        <div class="glass-card wizard-card">
+            <div class="wizard-header">
+                <svg class="brand-logo" viewBox="0 0 24 24" style="width:50px; height:50px; margin-bottom:12px;">
+                    <path d="M12 2L2 22h20L12 2zm0 3.99L19.53 19H4.47L12 5.99zM13 16h-2v2h2v-2zm0-6h-2v4h2v-4z"/>
+                </svg>
+                <h2>Installation Setup Wizard</h2>
+                <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top:4px;">Configure database connections and localized API endpoints.</p>
+            </div>
+
+            <!-- Page 1: OpenWeather API Configuration -->
+            <div class="wizard-step active" id="wiz-step-1">
+                <h3 style="margin-bottom:16px;">1. OpenWeather API Connection</h3>
+                <p style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:16px;">Please enter your OpenWeather API Key to enable weather forecast integrations.</p>
+                <div class="form-group">
+                    <label for="wiz-owm-key">OpenWeather API Key</label>
+                    <div style="position:relative;">
+                        <input type="password" id="wiz-owm-key" class="form-control" placeholder="Enter API Key">
+                        <button type="button" onclick="toggleFieldVis('wiz-owm-key')" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--text-secondary); cursor:pointer;">Show</button>
+                    </div>
+                </div>
+                <button type="button" class="btn-primary" style="width:100%; margin-top:12px;" onclick="validateOWMKey()">Validate Key & Continue</button>
+                <p id="wiz-owm-feedback" style="font-size:0.8rem; margin-top:8px; text-align:center;"></p>
+                <div style="text-align: center; margin-top: 20px;">
+                    <a href="#" onclick="activateDemoBypass()" style="color: var(--color-secondary); font-size: 0.85rem; font-weight: 600;">Skip & Run in Demo Sandbox Mode</a>
+                </div>
+            </div>
+
+            <!-- Page 2: Firebase Connection Setup -->
+            <div class="wizard-step" id="wiz-step-2">
+                <h3 style="margin-bottom:16px;">2. Firebase Realtime DB Setup</h3>
+                <p style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:12px;">Enter your Firebase project parameters to connect live ESP32 sensors.</p>
+                <div class="form-group">
+                    <label for="wiz-fb-apikey">Firebase API Key</label>
+                    <input type="text" id="wiz-fb-apikey" class="form-control" placeholder="AIzaSy...">
+                </div>
+                <div class="form-group">
+                    <label for="wiz-fb-auth">Auth Domain</label>
+                    <input type="text" id="wiz-fb-auth" class="form-control" placeholder="project-id.firebaseapp.com">
+                </div>
+                <div class="form-group">
+                    <label for="wiz-fb-dburl">Database URL</label>
+                    <input type="text" id="wiz-fb-dburl" class="form-control" placeholder="https://project-id-rtdb.firebaseio.com">
+                </div>
+                <div class="form-group">
+                    <label for="wiz-fb-projectid">Project ID</label>
+                    <input type="text" id="wiz-fb-projectid" class="form-control" placeholder="project-id">
+                </div>
+                <div class="form-group">
+                    <label for="wiz-fb-storage">Storage Bucket</label>
+                    <input type="text" id="wiz-fb-storage" class="form-control" placeholder="project-id.appspot.com">
+                </div>
+                <div class="form-group">
+                    <label for="wiz-fb-sender">Messaging Sender ID</label>
+                    <input type="text" id="wiz-fb-sender" class="form-control" placeholder="857395018302">
+                </div>
+                <div class="form-group">
+                    <label for="wiz-fb-appid">App ID</label>
+                    <input type="text" id="wiz-fb-appid" class="form-control" placeholder="1:857395018302:web:a1b2c3d4">
+                </div>
+                <div class="form-group">
+                    <label for="wiz-fb-measurement">Measurement ID (Optional)</label>
+                    <input type="text" id="wiz-fb-measurement" class="form-control" placeholder="G-XYZ123">
+                </div>
+                <button type="button" class="btn-primary" style="width:100%; margin-top:12px;" onclick="testFirebaseHandshake()">Test Connection & Continue</button>
+                <p id="wiz-fb-feedback" style="font-size:0.8rem; margin-top:8px; text-align:center;"></p>
+            </div>
+
+            <!-- Page 3: Physical Site Location Configurations -->
+            <div class="wizard-step" id="wiz-step-3">
+                <h3 style="margin-bottom:16px;">3. Set Target Monitoring Site</h3>
+                <p style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:16px;">Set the default monitoring coordinates for OWM reference calls.</p>
+                <div class="form-group">
+                    <label for="wiz-loc-city">City Name</label>
+                    <input type="text" id="wiz-loc-city" class="form-control" value="Ojo">
+                </div>
+                <div class="form-group">
+                    <label for="wiz-loc-state">State / Province</label>
+                    <input type="text" id="wiz-loc-state" class="form-control" value="Lagos">
+                </div>
+                <div class="form-group">
+                    <label for="wiz-loc-country">Country Code</label>
+                    <input type="text" id="wiz-loc-country" class="form-control" value="Nigeria">
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                    <div class="form-group">
+                        <label for="wiz-loc-lat">Latitude</label>
+                        <input type="text" id="wiz-loc-lat" class="form-control" value="6.4628">
+                    </div>
+                    <div class="form-group">
+                        <label for="wiz-loc-lon">Longitude</label>
+                        <input type="text" id="wiz-loc-lon" class="form-control" value="3.1970">
+                    </div>
+                </div>
+                <button type="button" class="btn-primary" style="width:100%; margin-top:12px;" onclick="commitInstallationConfig()">Finalize & Launch Hub</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN INTERACTIVE HEADER -->
+    <header>
+        <div class="brand">
+            <svg class="brand-logo" viewBox="0 0 24 24">
+                <path d="M12 2L2 22h20L12 2zm0 3.99L19.53 19H4.47L12 5.99zM13 16h-2v2h2v-2zm0-6h-2v4h2v-4z"/>
+            </svg>
+            <div class="brand-text">
+                <h1>SmartDrain</h1>
+                <p>Telemetry Node array v5.2.0</p>
+            </div>
+        </div>
+
+        <div class="system-status">
+            <div class="status-pill">
+                <span class="status-dot offline" id="status-firebase"></span> Firebase
+            </div>
+            <div class="status-pill">
+                <span class="status-dot offline" id="status-weather"></span> OWM Link
+            </div>
+            <div class="status-pill">
+                <span class="status-dot" id="status-net"></span> Wifi Network
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <button class="action-btn badge-container" onclick="toggleMenuDrawer('notification-drawer')" aria-label="Notifications">
+                <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+                <span class="btn-badge" id="noti-badge">0</span>
+            </button>
+            <button class="action-btn" onclick="toggleMenuDrawer('settings-drawer')" aria-label="Settings">
+                <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- DASHBOARD VIEWPORT -->
+    <main>
+        
+        <!-- COLUMN 1: SENSORS & ATMOSPHERES -->
+        <div class="dashboard-col">
+            
+            <!-- Weather Hero Module -->
+            <section class="glass-card weather-hero">
+                <div class="weather-hero-top">
+                    <div class="time-date-container">
+                        <span class="digital-clock" id="clock-display">00:00:00</span>
+                        <span class="calendar-date" id="date-display">...</span>
+                    </div>
+                    <div class="location-badge">
+                        <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                        <span id="loc-display">...</span>
+                    </div>
+                </div>
+
+                <div class="weather-hero-bottom">
+                    <div class="weather-main-temp">
+                        <div class="temp-val" id="weather-temp-main">--</div>
+                        <div class="temp-unit" id="weather-temp-unit">°C</div>
+                        <div class="weather-summary-text">
+                            <span class="weather-desc" id="weather-desc-text">Syncing...</span>
+                            <span class="weather-feels-like" id="weather-feels-text">Feels like --°</span>
+                        </div>
+                    </div>
+                    <div class="weather-main-icon-container" id="weather-hero-icon">
+                        <img src="" id="api-weather-icon" style="width:100%; height:100%; display:none;" alt="Atmospheric Condition Symbol">
+                    </div>
+                </div>
+            </section>
+
+            <!-- Search Field -->
+            <section class="glass-card search-box">
+                <div class="search-input-wrapper">
+                    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    <input type="text" id="city-search-input" placeholder="Query target coordinates / cities..." aria-label="Query Coordinates">
+                </div>
+                <button class="btn-search" onclick="triggerCitySearch()">Query</button>
+            </section>
+
+            <!-- Secondary Climate Parameters Grid -->
+            <section class="atmos-grid">
+                <div class="atmos-card">
+                    <svg viewBox="0 0 24 24"><path d="M12.56 1.43c-.35-.36-.92-.36-1.27 0C7.05 5.76 4 9.79 4 13.5 4 17.9 7.58 21.5 12 21.5s8-3.6 8-8c0-3.71-3.05-7.74-7.44-12.07zM12 19.5c-3.31 0-6-2.69-6-6 0-2.95 2.57-6.52 6-9.98 3.43 3.46 6 7.03 6 9.98 0 3.31-2.69 6-6 6z"/></svg>
+                    <span class="atmos-label">Humidity</span>
+                    <span class="atmos-value" id="val-humidity">--%</span>
+                </div>
+                <div class="atmos-card">
+                    <svg viewBox="0 0 24 24"><path d="M13.96 12.29l-2.07-3.06c-.11-.16-.3-.23-.48-.17l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41H2.72c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L-4.63 9.3c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                    <span class="atmos-label">Wind Speed</span>
+                    <span class="atmos-value" id="val-wind">-- m/s</span>
+                </div>
+                <div class="atmos-card">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                    <span class="atmos-label">Baro Pressure</span>
+                    <span class="atmos-value" id="val-pressure">-- hPa</span>
+                </div>
+                <div class="atmos-card">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.53c-.26-.81-1-1.4-1.9-1.4h-1v-3c0-.55-.45-1-1-1h-6v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                    <span class="atmos-label">Cloud Coverage</span>
+                    <span class="atmos-value" id="val-cloud-cover">--%</span>
+                </div>
+            </section>
+
+            <!-- Geographic Position Map Reference Window -->
+            <section class="glass-card map-section">
+                <div class="flex-between">
+                    <span class="section-title" style="margin: 0;">Geo Positioning Coordinates</span>
+                    <span id="geo-coordinates" style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--color-primary);">Lat: -- Lon: --</span>
+                </div>
+                <div class="map-placeholder">
+                    <div class="map-grid-pin"></div>
+                    <span class="map-label" id="map-telemetry-label">Active Site Vector</span>
+                </div>
+            </section>
+
+            <!-- 5-Day Extended Weather Outlook Carousel -->
+            <section class="glass-card">
+                <div class="tabs">
+                    <button class="tab-btn active">Five Day Extended Forecast</button>
+                </div>
+                <div class="forecast-scroll-container" id="forecast-render-deck">
+                    <!-- Forecast items mapped directly via OpenWeather response -->
+                </div>
+            </section>
+
+        </div>
+
+        <!-- COLUMN 2: REAL-TIME IoT DRAINS & METRIC CHARTS -->
+        <div class="dashboard-col">
+            
+            <!-- IoT Real-time Drainage Telemetry -->
+            <section class="glass-card">
+                <div class="section-header">
+                    <span class="section-title">
+                        <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H5V5h12v8z"/></svg>
+                        Telemetry Core
+                    </span>
+                    <div class="live-indicator">
+                        <span class="live-dot" style="background-color: var(--color-success);"></span> System Live
+                    </div>
+                </div>
+
+                <div class="telemetry-grid">
+                    <!-- Gauge 1: Water Level Depth percentage -->
+                    <div class="gauge-widget">
+                        <div class="gauge-container">
+                            <svg class="gauge-ring" viewBox="0 0 140 140">
+                                <circle class="gauge-circle-bg" cx="70" cy="70" r="60"/>
+                                <circle class="gauge-circle-fill" id="gauge-depth-fill" cx="70" cy="70" r="60" stroke="var(--color-primary)"/>
+                            </svg>
+                            <div class="gauge-value-display">
+                                <span class="gauge-num" id="gauge-depth-val">--</span>
+                                <span class="gauge-unit">%</span>
+                            </div>
+                        </div>
+                        <span class="gauge-title">Drainage Water Level</span>
+                    </div>
+
+                    <!-- Gauge 2: Flow Sensor -->
+                    <div class="gauge-widget">
+                        <div class="gauge-container">
+                            <svg class="gauge-ring" viewBox="0 0 140 140">
+                                <circle class="gauge-circle-bg" cx="70" cy="70" r="60"/>
+                                <circle class="gauge-circle-fill" id="gauge-flow-fill" cx="70" cy="70" r="60" stroke="var(--color-secondary)"/>
+                            </svg>
+                            <div class="gauge-value-display">
+                                <span class="gauge-num" id="gauge-flow-val">--</span>
+                                <span class="gauge-unit">L/m</span>
+                            </div>
+                        </div>
+                        <span class="gauge-title">Precipitation Intensity</span>
+                    </div>
+                </div>
+
+                <div class="mt-12">
+                    <div class="flex-between" style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">
+                        <span>Internal Drainage Pressure Overflow Status</span>
+                        <span id="overflow-flag" style="color: var(--color-success);">--</span>
+                    </div>
+                    <div class="water-bar-container">
+                        <div class="water-bar-fill" id="overflow-bar-fill"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ESP32 Hardware Status Nodes list -->
+            <section class="glass-card">
+                <span class="section-title">Active Node Array</span>
+                <div class="device-grid" id="esp32-node-list">
+                    <p style="color: var(--text-secondary); font-size: 0.85rem;" class="mt-12">Checking active device nodes...</p>
+                </div>
+            </section>
+
+            <!-- Predictive Flood Risk Indicator -->
+            <section class="glass-card risk-display-card">
+                <span class="section-title">Active Flood Threat Index</span>
+                <div class="risk-level-badge risk-level-low" id="risk-level-banner">NOMINAL</div>
+                <p class="risk-explanation" id="risk-narrative">Waiting for live data streams...</p>
+            </section>
+
+            <!-- Dynamic Historical Analytics Graphing -->
+            <section class="glass-card">
+                <div class="flex-between">
+                    <span class="section-title">Telemetry History Logs</span>
+                    <div class="gap-8">
+                        <button class="tab-btn active" id="chart-tab-today" onclick="setChartWindowFilter('today')">Today</button>
+                        <button class="tab-btn" id="chart-tab-week" onclick="setChartWindowFilter('week')">Week</button>
+                        <button class="tab-btn" id="chart-tab-month" onclick="setChartWindowFilter('month')">Month</button>
+                    </div>
+                </div>
+                <div style="position:relative; width:100%; height:220px; margin-top:16px;">
+                    <canvas id="historicalChartCanvas"></canvas>
+                </div>
+            </section>
+
+            <!-- Active Alerts advisory panel -->
+            <section class="glass-card">
+                <span class="section-title">Active Field Alerts</span>
+                <div class="alerts-wrapper mt-12" id="advisory-render-deck"></div>
+            </section>
+
+            <!-- Real-time Activity Timeline Console -->
+            <section class="glass-card">
+                <span class="section-title">System Activity Log</span>
+                <div class="timeline mt-12" id="activity-timeline"></div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- FLOATING PULL-OUT DRAWER: NOTIFICATION HISTORIES -->
+    <div class="panel-overlay" id="notification-drawer">
+        <div class="panel-header">
+            <h3>Diagnostic Notifications</h3>
+            <button class="panel-close" onclick="toggleMenuDrawer('notification-drawer')">&times;</button>
+        </div>
+        <div class="alerts-wrapper" id="drawer-notifications-list" style="overflow-y: auto; flex-grow: 1;"></div>
+    </div>
+
+    <!-- FLOATING PULL-OUT DRAWER: ADMIN DIAGNOSTICS & THRESHOLDS -->
+    <div class="panel-overlay" id="settings-drawer">
+        <div class="panel-header">
+            <h3>Admin System Settings</h3>
+            <button class="panel-close" onclick="toggleMenuDrawer('settings-drawer')">&times;</button>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:20px; padding-bottom: 40px;">
+            <div style="background: rgba(157, 78, 221, 0.1); border: 1px dashed var(--color-secondary); padding: 12px; border-radius: 12px;">
+                <label style="font-size:0.8rem; font-weight:700; color: var(--color-secondary); display:block; margin-bottom:4px;">Demo Mode Override</label>
+                <div class="toggle-container flex-between">
+                    <span style="font-size:0.75rem; color: var(--text-secondary);">Toggle Demo Sandbox Mode</span>
+                    <input type="checkbox" id="setting-demo-toggle" onchange="toggleDemoModeOverride(this.checked)">
+                </div>
+            </div>
+            
+            <h4 style="border-bottom: 1px solid var(--glass-border); padding-bottom:6px;">Credentials</h4>
+            <div class="form-group">
+                <label>OpenWeather API Key</label>
+                <input type="text" id="setting-owm-key" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Firebase databaseURL</label>
+                <input type="text" id="setting-fb-dburl" class="form-control">
+            </div>
+
+            <h4 style="border-bottom: 1px solid var(--glass-border); padding-bottom:6px;">Safety Threshold limits</h4>
+            <div class="form-group">
+                <label>Critical Water Depth Threshold (%)</label>
+                <input type="number" id="setting-thresh-water" class="form-control" value="85">
+            </div>
+            <div class="form-group">
+                <label>Critical Precipitation Intensity (%)</label>
+                <input type="number" id="setting-thresh-precip" class="form-control" value="70">
+            </div>
+
+            <h4 style="border-bottom: 1px solid var(--glass-border); padding-bottom:6px;">System Options</h4>
+            <div class="form-group">
+                <label>Unit Preferences</label>
+                <select id="setting-pref-unit" class="form-control" onchange="setSystemUnitScale(this.value)">
+                    <option value="C">Celsius (°C)</option>
+                    <option value="F">Fahrenheit (°F)</option>
+                </select>
+            </div>
+            
+            <button class="btn-primary" onclick="commitAdminSettingsChanges()">Save System Parameters</button>
+        </div>
+    </div>
+
+    <!-- OFFLINE TOAST BANNER -->
+    <div class="error-card-toast" id="toast-network-err">
+        <svg style="width:24px; height:24px; fill:currentColor;" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+        <div>
+            <h5 style="font-weight:700;">Network Signal Fault</h5>
+            <p style="font-size:0.75rem; opacity:0.9;">System operating offline using local cache.</p>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+           VIRTUAL DIRECTORY: /js/app.js
+           ========================================================================= -->
+    <script>
+        // System Config Keys
+        const STORAGE_CONFIG_KEY = "smartdrain_production_config";
+
+        // Global Application Runtime State variables
+        let localConfig = null;
+        let fbAppInstance = null;
+        let fbDbInstance = null;
+        let telemetryHistoryChart = null;
+
+        let runtimeState = {
+            demoMode: false,
+            waterLevel: 0,
+            precipitation: 0,
+            temperature: 28.5,
+            humidity: 60,
+            baroPressure: 1012,
+            cloudCover: 40,
+            windSpeed: 3.5,
+            flowRate: 0,
+            units: 'C',
+            thresholdWater: 85,
+            thresholdPrecip: 70,
+            chartFilter: 'today',
+            location: {
+                city: "Ojo",
+                state: "Lagos",
+                country: "Nigeria",
+                lat: 6.4628,
+                lon: 3.1970
+            },
+            devices: {},
+            alerts: [],
+            historyData: []
+        };
+
+        // Ambient Particle Canvas System
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let ambientParticles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class AmbientParticle {
+            constructor() { this.reset(); }
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height + canvas.height;
+                this.radius = Math.random() * 2 + 1;
+                this.speed = Math.random() * 0.6 + 0.15;
+                this.alpha = Math.random() * 0.2 + 0.05;
+                this.drift = Math.random() * 0.2 - 0.1;
+            }
+            update() {
+                this.y -= this.speed;
+                this.x += this.drift;
+                if (this.y < 0 || this.x < 0 || this.x > canvas.width) this.reset();
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(0, 242, 254, ${this.alpha})`;
+                ctx.fill();
+            }
+        }
+        for (let i = 0; i < 30; i++) ambientParticles.push(new AmbientParticle());
+        function runAmbientCanvasAnimation() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ambientParticles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(runAmbientCanvasAnimation);
+        }
+        runAmbientCanvasAnimation();
+
+        // Boot system check
+        window.addEventListener('DOMContentLoaded', () => {
+            startClockService();
+            verifySystemConfiguration();
+        });
+
+        // Setup Wizard & Config Methods
+        function verifySystemConfiguration() {
+            const stored = localStorage.getItem(STORAGE_CONFIG_KEY);
+            if (stored) {
+                localConfig = JSON.parse(stored);
+                runtimeState.demoMode = localConfig.demoMode || false;
+                runtimeState.location = localConfig.location || runtimeState.location;
+                runtimeState.thresholdWater = localConfig.thresholdWater || 85;
+                runtimeState.thresholdPrecip = localConfig.thresholdPrecip || 70;
+                
+                // Initialize admin panels
+                document.getElementById('setting-demo-toggle').checked = runtimeState.demoMode;
+                document.getElementById('setting-owm-key').value = localConfig.openWeatherKey || '';
+                document.getElementById('setting-fb-dburl').value = localConfig.firebase ? localConfig.firebase.databaseURL : '';
+                document.getElementById('setting-thresh-water').value = runtimeState.thresholdWater;
+                document.getElementById('setting-thresh-precip').value = runtimeState.thresholdPrecip;
+
+                initializeMonitoringSystem();
+            } else {
+                document.getElementById('setup-wizard').classList.remove('hidden');
+            }
+        }
+
+        function toggleFieldVis(id) {
+            const el = document.getElementById(id);
+            el.type = el.type === 'password' ? 'text' : 'password';
+        }
+
+        function validateOWMKey() {
+            const key = document.getElementById('wiz-owm-key').value.trim();
+            const feedback = document.getElementById('wiz-owm-feedback');
+
+            if (!key) {
+                feedback.innerText = "Please enter an API key.";
+                feedback.style.color = "var(--color-danger)";
+                return;
+            }
+
+            feedback.innerText = "Testing connectivity...";
+            feedback.style.color = "var(--color-warning)";
+
+            fetch(`https://api.openweathermap.org/data/2.5/weather?lat=6.4628&lon=3.1970&appid=${key}`)
+                .then(res => {
+                    if (res.ok) {
+                        feedback.innerText = "API key successfully verified.";
+                        feedback.style.color = "var(--color-success)";
+                        setTimeout(() => {
+                            document.getElementById('wiz-step-1').classList.remove('active');
+                            document.getElementById('wiz-step-2').classList.add('active');
+                        }, 800);
+                    } else {
+                        throw new Error();
+                    }
+                })
+                .catch(() => {
+                    feedback.innerText = "Verification failed. Check your API key.";
+                    feedback.style.color = "var(--color-danger)";
+                });
+        }
+
+        function testFirebaseHandshake() {
+            const apiKey = document.getElementById('wiz-fb-apikey').value.trim();
+            const authDomain = document.getElementById('wiz-fb-auth').value.trim();
+            const databaseURL = document.getElementById('wiz-fb-dburl').value.trim();
+            const projectId = document.getElementById('wiz-fb-projectid').value.trim();
+            const storageBucket = document.getElementById('wiz-fb-storage').value.trim();
+            const messagingSenderId = document.getElementById('wiz-fb-sender').value.trim();
+            const appId = document.getElementById('wiz-fb-appid').value.trim();
+            const measurementId = document.getElementById('wiz-fb-measurement').value.trim();
+            const feedback = document.getElementById('wiz-fb-feedback');
+
+            if (!apiKey || !databaseURL || !projectId || !appId) {
+                feedback.innerText = "All required fields must be completed.";
+                feedback.style.color = "var(--color-danger)";
+                return;
+            }
+
+            feedback.innerText = "Testing handshake...";
+            feedback.style.color = "var(--color-warning)";
+
+            const testConfig = { apiKey, authDomain, databaseURL, projectId, storageBucket, messagingSenderId, appId, measurementId };
+
+            try {
+                const testApp = firebase.initializeApp(testConfig, "test_instance");
+                const testDb = testApp.database();
+                
+                testDb.ref(".info/connected").once("value", (snap) => {
+                    if (snap.val() === true) {
+                        feedback.innerText = "Connection verified.";
+                        feedback.style.color = "var(--color-success)";
+                        setTimeout(() => {
+                            document.getElementById('wiz-step-2').classList.remove('active');
+                            document.getElementById('wiz-step-3').classList.add('active');
+                            testApp.delete();
+                        }, 800);
+                    } else {
+                        feedback.innerText = "Handshake timeout. Check security configurations.";
+                        feedback.style.color = "var(--color-danger)";
+                        testApp.delete();
+                    }
+                });
+            } catch (err) {
+                feedback.innerText = "Handshake failed. Verify security parameters.";
+                feedback.style.color = "var(--color-danger)";
+            }
+        }
+
+        function commitInstallationConfig() {
+            const config = {
+                demoMode: false,
+                openWeatherKey: document.getElementById('wiz-owm-key').value.trim(),
+                firebase: {
+                    apiKey: document.getElementById('wiz-fb-apikey').value.trim(),
+                    authDomain: document.getElementById('wiz-fb-auth').value.trim(),
+                    databaseURL: document.getElementById('wiz-fb-dburl').value.trim(),
+                    projectId: document.getElementById('wiz-fb-projectid').value.trim(),
+                    storageBucket: document.getElementById('wiz-fb-storage').value.trim(),
+                    messagingSenderId: document.getElementById('wiz-fb-sender').value.trim(),
+                    appId: document.getElementById('wiz-fb-appid').value.trim(),
+                    measurementId: document.getElementById('wiz-fb-measurement').value.trim()
+                },
+                location: {
+                    city: document.getElementById('wiz-loc-city').value.trim(),
+                    state: document.getElementById('wiz-loc-state').value.trim(),
+                    country: document.getElementById('wiz-loc-country').value.trim(),
+                    lat: parseFloat(document.getElementById('wiz-loc-lat').value),
+                    lon: parseFloat(document.getElementById('wiz-loc-lon').value)
+                },
+                thresholdWater: 85,
+                thresholdPrecip: 70
+            };
+
+            localStorage.setItem(STORAGE_CONFIG_KEY, JSON.stringify(config));
+            document.getElementById('setup-wizard').classList.add('hidden');
+            verifySystemConfiguration();
+        }
+
+        function activateDemoBypass() {
+            const config = {
+                demoMode: true,
+                openWeatherKey: "",
+                firebase: null,
+                location: {
+                    city: "Ojo",
+                    state: "Lagos",
+                    country: "Nigeria",
+                    lat: 6.4628,
+                    lon: 3.1970
+                },
+                thresholdWater: 85,
+                thresholdPrecip: 70
+            };
+            localStorage.setItem(STORAGE_CONFIG_KEY, JSON.stringify(config));
+            document.getElementById('setup-wizard').classList.add('hidden');
+            verifySystemConfiguration();
+        }
+
+        // Monitoring Initializer
+        function initializeMonitoringSystem() {
+            addActivityLogEntry("Initializing SmartDrain Node array...", "info");
+            
+            // Build dynamic graphing engines
+            setupHistoricalDataChart();
+
+            if (runtimeState.demoMode) {
+                document.getElementById('status-firebase').className = "status-dot simulating";
+                document.getElementById('status-weather').className = "status-dot simulating";
+                addActivityLogEntry("Sandbox Active: Launching simulated tracking cycles.", "warning");
+                runDemoSimulationEngine();
+            } else {
+                initFirebaseSDKConnection();
+                fetchOpenWeatherData();
+                // Pull forecast and current weather metrics on a 10-minute loop
+                setInterval(fetchOpenWeatherData, 600000);
+            }
+
+            // Sync structural connectivity
+            window.addEventListener('online', verifyInternetStatus);
+            window.addEventListener('offline', verifyInternetStatus);
+            verifyInternetStatus();
+        }
+
+        function verifyInternetStatus() {
+            const stat = document.getElementById('status-net');
+            const toast = document.getElementById('toast-network-err');
+            if (navigator.onLine) {
+                stat.className = "status-dot";
+                toast.classList.remove('active');
+            } else {
+                stat.className = "status-dot offline";
+                toast.classList.add('active');
+                addActivityLogEntry("Local network card reporting offline status.", "error");
+            }
+        }
+
+        // Firebase Implementations
+        function initFirebaseSDKConnection() {
+            if (!localConfig || !localConfig.firebase) return;
+
+            addActivityLogEntry("Establishing direct database sync...", "info");
+
+            try {
+                fbAppInstance = firebase.initializeApp(localConfig.firebase);
+                fbDbInstance = fbAppInstance.database();
+
+                const connRef = fbDbInstance.ref(".info/connected");
+                connRef.on("value", (snap) => {
+                    const statDot = document.getElementById('status-firebase');
+                    if (snap.val() === true) {
+                        statDot.className = "status-dot";
+                        addActivityLogEntry("Cloud database handshake complete.", "success");
+                        attachFirebaseDataListeners();
+                    } else {
+                        statDot.className = "status-dot offline";
+                        addActivityLogEntry("Connecting to cloud database...", "error");
+                    }
+                });
+            } catch (err) {
+                addActivityLogEntry("Error initializing Firebase connection.", "error");
+            }
+        }
+
+        function attachFirebaseDataListeners() {
+            if (!fbDbInstance) return;
+
+            // 1. Live Sensors
+            fbDbInstance.ref("SmartFloodSystem/Sensors").on("value", (snap) => {
+                const data = snap.val();
+                if (data) {
+                    runtimeState.waterLevel = data.waterLevel || 0;
+                    runtimeState.precipitation = data.rainIntensity || 0;
+                    runtimeState.flowRate = data.flowRate || 0;
+                    runtimeState.temperature = data.temperature || runtimeState.temperature;
+                    runtimeState.humidity = data.humidity || runtimeState.humidity;
+
+                    recalculateOperationalMetrics();
+                }
+            });
+
+            // 2. Active Hardware Nodes
+            fbDbInstance.ref("SmartFloodSystem/Devices").on("value", (snap) => {
+                const data = snap.val();
+                if (data) {
+                    runtimeState.devices = data;
+                    renderConnectedDeviceGrid();
+                }
+            });
+
+            // 3. Historical Data Records
+            fbDbInstance.ref("SmartFloodSystem/History").limitToLast(100).on("value", (snap) => {
+                const data = snap.val();
+                if (data) {
+                    runtimeState.historyData = Object.keys(data).map(key => ({
+                        id: key,
+                        ...data[key]
+                    }));
+                    processHistoricalDataToChart();
+                }
+            });
+        }
+
+        // OpenWeather Fetch
+        function fetchOpenWeatherData() {
+            if (!localConfig || !localConfig.openWeatherKey) return;
+            
+            const lat = runtimeState.location.lat;
+            const lon = runtimeState.location.lon;
+            const key = localConfig.openWeatherKey;
+
+            addActivityLogEntry("Updating local meteorological frames...", "info");
+
+            // Current Weather Fetch
+            fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${key}`)
+                .then(res => {
+                    if (!res.ok) throw new Error();
+                    return res.json();
+                })
+                .then(data => {
+                    document.getElementById('status-weather').className = "status-dot";
+                    
+                    runtimeState.temperature = data.main.temp;
+                    runtimeState.humidity = data.main.humidity;
+                    runtimeState.windSpeed = data.wind.speed;
+                    runtimeState.baroPressure = data.main.pressure;
+                    runtimeState.cloudCover = data.clouds.all;
+                    runtimeState.location.city = data.name;
+                    
+                    updateWeatherDashboardElements(data.weather[0].description, data.weather[0].icon);
+                    recalculateOperationalMetrics();
+                })
+                .catch(() => {
+                    document.getElementById('status-weather').className = "status-dot offline";
+                    addActivityLogEntry("OpenWeather endpoint offline. Retrying...", "error");
+                });
+
+            // 5-Day Extended Outlook Fetch
+            fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${key}`)
+                .then(res => res.json())
+                .then(data => {
+                    renderForecastCardsDeck(data.list);
+                })
+                .catch(() => {
+                    addActivityLogEntry("Failed to retrieve 5-day weather forecast.", "error");
+                });
+        }
+
+        function updateWeatherDashboardElements(desc, iconCode) {
+            const scale = runtimeState.units;
+            let temp = runtimeState.temperature;
+            let feelsLike = temp - 0.8;
+
+            if (scale === 'F') {
+                temp = (temp * 9/5) + 32;
+                feelsLike = (feelsLike * 9/5) + 32;
+            }
+
+            document.getElementById('weather-temp-main').innerText = Math.round(temp);
+            document.getElementById('weather-temp-unit').innerText = `°${scale}`;
+            document.getElementById('weather-feels-text').innerText = `Feels like ${Math.round(feelsLike)}°`;
+            document.getElementById('weather-desc-text').innerText = desc;
+            document.getElementById('loc-display').innerText = `${runtimeState.location.city}, ${runtimeState.location.country}`;
+            document.getElementById('geo-coordinates').innerText = `Lat: ${runtimeState.location.lat} Lon: ${runtimeState.location.lon}`;
+
+            document.getElementById('val-humidity').innerText = `${runtimeState.humidity}%`;
+            document.getElementById('val-wind').innerText = `${runtimeState.windSpeed} m/s`;
+            document.getElementById('val-pressure').innerText = `${runtimeState.baroPressure} hPa`;
+            document.getElementById('val-cloud-cover').innerText = `${runtimeState.cloudCover}%`;
+
+            const iconImg = document.getElementById('api-weather-icon');
+            iconImg.src = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+            iconImg.style.display = 'block';
+        }
+
+        function renderForecastCardsDeck(list) {
+            const container = document.getElementById('forecast-render-deck');
+            container.innerHTML = '';
+
+            const dailyPoints = list.filter((f, idx) => idx % 8 === 0).slice(0, 5);
+
+            dailyPoints.forEach(p => {
+                const dateObj = new Date(p.dt * 1000);
+                const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+                const temp = Math.round(p.main.temp);
+                const pop = Math.round(p.pop * 100);
+
+                const card = document.createElement('div');
+                card.className = 'forecast-card';
+                card.innerHTML = `
+                    <span class="forecast-time">${dayName}</span>
+                    <img class="forecast-icon" src="https://openweathermap.org/img/wn/${p.weather[0].icon}.png" alt="weather outline icon">
+                    <span class="forecast-temp">${temp}°</span>
+                    <span class="forecast-pop">🌧 ${pop}%</span>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Dynamic Cities Search Queries
+        function triggerCitySearch() {
+            const query = document.getElementById('city-search-input').value;
+            if (!query || query.trim() === "") return;
+
+            addActivityLogEntry(`Initiating location search: ${query}`, "info");
+
+            if (runtimeState.demoMode) {
+                runtimeState.location.city = query;
+                document.getElementById('loc-display').innerText = `${query}, Nigeria`;
+                addActivityLogEntry(`Location updated (Demo Mode): ${query}`, "success");
+                return;
+            }
+
+            const key = localConfig.openWeatherKey;
+            fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(query)}&limit=1&appid=${key}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data[0]) {
+                        runtimeState.location.lat = data[0].lat;
+                        runtimeState.location.lon = data[0].lon;
+                        runtimeState.location.city = data[0].name;
+                        runtimeState.location.country = data[0].country;
+
+                        addActivityLogEntry(`Active coordinates updated: ${data[0].name}`, "success");
+                        fetchOpenWeatherData();
+                    } else {
+                        addActivityLogEntry("No matching location found.", "warning");
+                    }
+                })
+                .catch(() => {
+                    addActivityLogEntry("Geocoding lookup failed.", "error");
+                });
+        }
+
+        // Threat Matrix & Surcharge Dials
+        function recalculateOperationalMetrics() {
+            const depth = runtimeState.waterLevel;
+            const flow = runtimeState.precipitation;
+
+            // Update gauges (Max progress stroke width 377px)
+            const depthOffset = 377 - (377 * (depth / 100));
+            const flowOffset = 377 - (377 * (flow / 100));
+
+            document.getElementById('gauge-depth-fill').style.strokeDashoffset = depthOffset;
+            document.getElementById('gauge-depth-val').innerText = depth;
+
+            document.getElementById('gauge-flow-fill').style.strokeDashoffset = flowOffset;
+            document.getElementById('gauge-flow-val').innerText = flow;
+
+            // Pressure overflow indicator updates
+            const combinedFlow = Math.round((depth + flow) / 2);
+            const overflowBar = document.getElementById('overflow-bar-fill');
+            const overflowFlag = document.getElementById('overflow-flag');
+
+            overflowBar.style.width = `${combinedFlow}%`;
+
+            if (combinedFlow > 80) {
+                overflowFlag.innerText = "CRITICAL CAPACITY SURCHARGE";
+                overflowFlag.style.color = "var(--color-danger)";
+                overflowBar.style.background = "var(--color-danger)";
+            } else if (combinedFlow > 55) {
+                overflowFlag.innerText = "WARNING OUTFLOW OVERLOAD";
+                overflowFlag.style.color = "var(--color-warning)";
+                overflowBar.style.background = "var(--color-warning)";
+            } else {
+                overflowFlag.innerText = "NOMINAL OPERATING CAPACITIES";
+                overflowFlag.style.color = "var(--color-success)";
+                overflowBar.style.background = "linear-gradient(90deg, var(--color-primary), var(--color-secondary))";
+            }
+
+            // High Threat Matrix Calculations
+            const banner = document.getElementById('risk-level-banner');
+            const narrative = document.getElementById('risk-narrative');
+
+            const isCriticalWater = depth >= runtimeState.thresholdWater;
+            const isHighPrecip = flow >= runtimeState.thresholdPrecip;
+
+            if (isCriticalWater && isHighPrecip) {
+                banner.className = "risk-level-badge risk-level-crit";
+                banner.innerText = "CRITICAL THREAT ADVISORY";
+                narrative.innerText = `Subsurface capacity critically overloaded (${depth}%). Surcharged run-off channels detected. Local warning alerts broadcasted.`;
+                playEmergencyAudioSiren();
+                registerThreatAlert("CRITICAL FLOOD ADVISORY", `Drain level overflow limits exceeded at ${depth}%. Local run-off channels surcharged.`, "danger");
+            } else if (isCriticalWater) {
+                banner.className = "risk-level-badge risk-level-high";
+                banner.innerText = "HIGH FLOOD ADVISORY";
+                narrative.innerText = `Water depths have crossed critical limits (${depth}%). High risk of localized sub-grade surcharge backflows. Monitor channels.`;
+                registerThreatAlert("HIGH CAPACITY WARNING", `Sewer capacity depth limit exceeded at ${depth}%.`, "danger");
+            } else if (isHighPrecip) {
+                banner.className = "risk-level-badge risk-level-med";
+                banner.innerText = "HEAVY RAIN WARNING";
+                narrative.innerText = "High-velocity rainfall detected. Main surface run-off basins running at peak capacity. Localized ponding risk.";
+                registerThreatAlert("HEAVY PRECIPITATION ALERT", "Torrential rainfall rates overloading local drainage intakes.", "system");
+            } else {
+                banner.className = "risk-level-badge risk-level-low";
+                banner.innerText = "NOMINAL";
+                narrative.innerText = "Subsurface node channels operating in safety envelopes. Zero run-off threats detected.";
+            }
+
+            renderDiagnosticAdvisoryPanel();
+        }
+
+        // Hardware Grid render
+        function renderConnectedDeviceGrid() {
+            const grid = document.getElementById('esp32-node-list');
+            grid.innerHTML = '';
+
+            const nodeIDs = Object.keys(runtimeState.devices);
+            if (nodeIDs.length === 0) {
+                grid.innerHTML = '<p style="color:var(--text-secondary); font-size:0.8rem;">Waiting for client ESP32 nodes...</p>';
+                return;
+            }
+
+            nodeIDs.forEach(id => {
+                const dev = runtimeState.devices[id];
+                const isOnline = (Date.now() - dev.lastSeen) < 15000; // Online check within 15 seconds
+
+                const card = document.createElement('div');
+                card.className = 'device-card';
+                card.innerHTML = `
+                    <h5>Node: ${id}</h5>
+                    <span class="device-status-badge" style="background: ${isOnline ? 'rgba(0,230,118,0.1)' : 'rgba(255,46,147,0.1)'}; color: ${isOnline ? 'var(--color-success)' : 'var(--color-danger)'}">
+                        ${isOnline ? 'ONLINE' : 'OFFLINE'}
+                    </span>
+                    <p style="margin-top: 6px; font-size: 0.7rem; color: var(--text-secondary)">Battery: ${dev.battery || '--'}%</p>
+                    <p style="font-size: 0.7rem; color: var(--text-secondary)">Signal: ${dev.wifiSignal || '--'} dBm</p>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Active Advisories Diagnostic Panel
+        function renderDiagnosticAdvisoryPanel() {
+            const deck = document.getElementById('advisory-render-deck');
+            deck.innerHTML = '';
+
+            if (runtimeState.alerts.length === 0) {
+                deck.innerHTML = `
+                    <div class="alert-item success">
+                        <svg class="alert-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                        <div class="alert-content">
+                            <h4>All Systems Nominal</h4>
+                            <p>Telemetry nodes reporting normal capacity levels. Flow rates steady.</p>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            runtimeState.alerts.slice(-3).forEach(alert => {
+                const item = document.createElement('div');
+                item.className = `alert-item ${alert.type === 'danger' ? '' : 'system'}`;
+                item.innerHTML = `
+                    <svg class="alert-icon" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+                    <div class="alert-content">
+                        <h4>${alert.title}</h4>
+                        <p>${alert.message}</p>
+                    </div>
+                `;
+                deck.appendChild(item);
+            });
+        }
+
+        function registerThreatAlert(title, message, type) {
+            const exists = runtimeState.alerts.some(a => a.title === title);
+            if (exists) return; // Prevent duplicating warning flags
+
+            runtimeState.alerts.push({ title, message, type, time: Date.now() });
+            addActivityLogEntry(`${title}: ${message}`, type === 'danger' ? 'error' : 'warning');
+
+            if (Notification.permission === "granted") {
+                new Notification(`SmartDrain - ${title}`, { body: message });
+            }
+        }
+
+        // Request browser notifications permission on launch
+        if (Notification.permission === "default") {
+            Notification.requestPermission();
+        }
+
+        // Synthesized Warning sirens
+        let lastSirenPlayedAt = 0;
+        function playEmergencyAudioSiren() {
+            // Rate-limit audio alerts to run at most once every 10 seconds to prevent overlapping audio
+            if (Date.now() - lastSirenPlayedAt < 10000) return;
+            lastSirenPlayedAt = Date.now();
+
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                const playBeep = (startTime, duration, frequency) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(frequency, startTime);
+                    osc.frequency.exponentialRampToValueAtTime(frequency * 1.5, startTime + duration);
+                    
+                    gain.gain.setValueAtTime(0.12, startTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+                    
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(startTime);
+                    osc.stop(startTime + duration);
+                };
+
+                // Sequential dual sweep alerts
+                playBeep(audioCtx.currentTime, 0.4, 880);
+                playBeep(audioCtx.currentTime + 0.5, 0.4, 660);
+            } catch (err) {
+                console.warn("Audio context execution was blocked by client security policy.");
+            }
+        }
+
+        // Historical Graph Controls
+        function setupHistoricalDataChart() {
+            const chartCanvas = document.getElementById('historicalChartCanvas').getContext('2d');
+            
+            telemetryHistoryChart = new Chart(chartCanvas, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Water Level Depth (%)',
+                            borderColor: '#00f2fe',
+                            backgroundColor: 'rgba(0, 242, 254, 0.05)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: true,
+                            data: []
+                        },
+                        {
+                            label: 'Rainfall Value (%)',
+                            borderColor: '#9d4edd',
+                            backgroundColor: 'rgba(157, 78, 221, 0.05)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: true,
+                            data: []
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255,255,255,0.03)' },
+                            ticks: { color: '#a0aec0', font: { size: 9 } }
+                        },
+                        y: {
+                            min: 0,
+                            max: 100,
+                            grid: { color: 'rgba(255,255,255,0.03)' },
+                            ticks: { color: '#a0aec0', font: { size: 9 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        function setChartWindowFilter(filterType) {
+            runtimeState.chartFilter = filterType;
+            
+            const tabs = ['today', 'week', 'month'];
+            tabs.forEach(t => {
+                const tabEl = document.getElementById(`chart-tab-${t}`);
+                if (t === filterType) {
+                    tabEl.classList.add('active');
+                } else {
+                    tabEl.classList.remove('active');
+                }
+            });
+
+            addActivityLogEntry(`Adjusting historical graph scope to: ${filterType}`, "info");
+            processHistoricalDataToChart();
+        }
+
+        function processHistoricalDataToChart() {
+            if (!telemetryHistoryChart) return;
+
+            let filtered = [...runtimeState.historyData];
+            const now = Date.now();
+
+            if (runtimeState.chartFilter === 'today') {
+                // Filter only data from the last 24 hours
+                filtered = filtered.filter(p => (now - p.timestamp) < 86400000);
+            } else if (runtimeState.chartFilter === 'week') {
+                // Filter data from the last 7 days
+                filtered = filtered.filter(p => (now - p.timestamp) < (86400000 * 7));
+            } else if (runtimeState.chartFilter === 'month') {
+                // Filter data from the last 30 days
+                filtered = filtered.filter(p => (now - p.timestamp) < (86400000 * 30));
+            }
+
+            // Sort chronically by timestamp
+            filtered.sort((a, b) => a.timestamp - b.timestamp);
+
+            const labels = [];
+            const waterData = [];
+            const rainData = [];
+
+            filtered.forEach(p => {
+                const dateObj = new Date(p.timestamp);
+                let lbl = '';
+                if (runtimeState.chartFilter === 'today') {
+                    lbl = dateObj.toTimeString().split(' ')[0].slice(0, 5);
+                } else {
+                    lbl = dateObj.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+                }
+                labels.push(lbl);
+                waterData.push(p.waterLevel);
+                rainData.push(p.rainIntensity);
+            });
+
+            telemetryHistoryChart.data.labels = labels;
+            telemetryHistoryChart.data.datasets[0].data = waterData;
+            telemetryHistoryChart.data.datasets[1].data = rainData;
+            telemetryHistoryChart.update('none');
+        }
+
+        // Demo Simulation Mock loop
+        let demoIntervalId = null;
+        function runDemoSimulationEngine() {
+            if (demoIntervalId) clearInterval(demoIntervalId);
+
+            runtimeState.devices = {
+                "ESP32-Ojo-Alpha": { lastSeen: Date.now(), battery: 94, wifiSignal: -58 },
+                "ESP32-Ojo-Beta": { lastSeen: Date.now() - 3600000, battery: 41, wifiSignal: -76 }
+            };
+            renderConnectedDeviceGrid();
+
+            // Set up mock historical data points for initial chart render
+            const baseTime = Date.now() - (86400000 * 5); // 5 days ago
+            runtimeState.historyData = [];
+            for (let i = 0; i < 40; i++) {
+                const ts = baseTime + (i * 3 * 3600 * 1000); // interval of 3 hours
+                runtimeState.historyData.push({
+                    timestamp: ts,
+                    waterLevel: Math.round(30 + (Math.sin(i * 0.4) * 20)),
+                    rainIntensity: Math.round(25 + (Math.cos(i * 0.4) * 15))
+                });
+            }
+            processHistoricalDataToChart();
+
+            // Run simulation oscillations
+            demoIntervalId = setInterval(() => {
+                const cycles = Date.now() / 60000;
+                runtimeState.waterLevel = Math.round(50 + (Math.sin(cycles) * 38));
+                runtimeState.precipitation = Math.round(45 + (Math.cos(cycles) * 28));
+                runtimeState.flowRate = parseFloat((runtimeState.waterLevel * 0.12).toFixed(1));
+
+                recalculateOperationalMetrics();
+
+                // Dynamically append mock points to local state arrays
+                const point = {
+                    timestamp: Date.now(),
+                    waterLevel: runtimeState.waterLevel,
+                    rainIntensity: runtimeState.precipitation
+                };
+                runtimeState.historyData.push(point);
+                if (runtimeState.historyData.length > 50) runtimeState.historyData.shift();
+                processHistoricalDataToChart();
+            }, 3000);
+        }
+
+        function toggleDemoModeOverride(checked) {
+            localConfig.demoMode = checked;
+            localStorage.setItem(STORAGE_CONFIG_KEY, JSON.stringify(localConfig));
+            location.reload();
+        }
+
+        // Admin panel integrations
+        function commitAdminSettingsChanges() {
+            localConfig.demoMode = document.getElementById('setting-demo-toggle').checked;
+            localConfig.openWeatherKey = document.getElementById('setting-owm-key').value.trim();
+            
+            if (localConfig.firebase) {
+                localConfig.firebase.databaseURL = document.getElementById('setting-fb-dburl').value.trim();
+            }
+
+            localConfig.thresholdWater = parseInt(document.getElementById('setting-thresh-water').value);
+            localConfig.thresholdPrecip = parseInt(document.getElementById('setting-thresh-precip').value);
+
+            localStorage.setItem(STORAGE_CONFIG_KEY, JSON.stringify(localConfig));
+            addActivityLogEntry("Admin configuration updates committed successfully.", "success");
+            
+            setTimeout(() => { location.reload(); }, 1000);
+        }
+
+        function setSystemUnitScale(val) {
+            runtimeState.units = val;
+            fetchOpenWeatherData();
+            addActivityLogEntry(`Temperature unit scale modified: ${val === 'F' ? 'Fahrenheit' : 'Celsius'}.`, "info");
+        }
+
+        // Clock utilities
+        function startClockService() {
+            const clockEl = document.getElementById('clock-display');
+            const dateEl = document.getElementById('date-display');
+            
+            setInterval(() => {
+                const now = new Date();
+                clockEl.innerText = now.toTimeString().split(' ')[0];
+                dateEl.innerText = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: '2-digit', year: 'numeric' });
+            }, 1000);
+        }
+
+        function toggleMenuDrawer(id) {
+            document.getElementById(id).classList.toggle('active');
+        }
+
+        function addActivityLogEntry(message, category = "info") {
+            const timeline = document.getElementById('activity-timeline');
+            const timestamp = new Date().toTimeString().split(' ')[0];
+
+            let dotColor = "var(--color-primary)";
+            if (category === "success") dotColor = "var(--color-success)";
+            if (category === "warning") dotColor = "var(--color-warning)";
+            if (category === "error") dotColor = "var(--color-danger)";
+
+            const logItem = document.createElement('div');
+            logItem.className = "timeline-item";
+            logItem.innerHTML = `
+                <div class="timeline-dot" style="background-color: ${dotColor}"></div>
+                <div class="timeline-content">
+                    <p class="timeline-text">${message}</p>
+                    <p class="timeline-time">${timestamp}</p>
+                </div>
+            `;
+            timeline.insertBefore(logItem, timeline.firstChild);
+
+            if (timeline.children.length > 8) timeline.removeChild(timeline.lastChild);
+        }
+    </script>
+</body>
+</html>

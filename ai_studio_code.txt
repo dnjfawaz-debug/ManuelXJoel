@@ -1,0 +1,30 @@
+{
+  "SmartFloodSystem": {
+    "Sensors": {
+      "waterLevel": 42,
+      "rainIntensity": 15,
+      "flowRate": 5.2,
+      "temperature": 29.5,
+      "humidity": 62
+    },
+    "Devices": {
+      "ESP32-Ojo-Alpha": {
+        "deviceId": "ESP32-Ojo-Alpha",
+        "lastSeen": 1718292837000,
+        "battery": 94,
+        "wifiSignal": -58,
+        "sensorStatus": "nominal"
+      }
+    },
+    "History": {
+      "log_id_102": {
+        "timestamp": 1718292837000,
+        "waterLevel": 42,
+        "rainIntensity": 15,
+        "humidity": 62,
+        "temperature": 29.5,
+        "flowRate": 5.2
+      }
+    }
+  }
+}
