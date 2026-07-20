@@ -1,0 +1,2227 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartDrain - Premium Flood & Drainage Monitoring System</title>
+    <!-- Google Fonts for modern typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ==========================================
+           1. DESIGN SYSTEM & CSS CUSTOM PROPERTIES
+           ========================================== */
+        :root {
+            /* Theme: Dark (Default) */
+            --bg-gradient: radial-gradient(circle at 50% 0%, #151b2e 0%, #0a0d16 100%);
+            --glass-bg: rgba(20, 26, 46, 0.45);
+            --glass-border: rgba(255, 255, 255, 0.07);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            --glass-glow: rgba(0, 242, 254, 0.15);
+            
+            --text-primary: #ffffff;
+            --text-secondary: #a0aec0;
+            --text-muted: #64748b;
+            
+            /* Status Colors */
+            --color-primary: #00f2fe;     /* Electric Cyan */
+            --color-secondary: #9d4edd;   /* Cyber Purple */
+            --color-success: #00e676;     /* Low Risk */
+            --color-warning: #ffb300;     /* Medium Risk */
+            --color-danger: #ff2e93;      /* High/Critical Risk */
+            --color-neutral: #4facfe;     /* Deep Blue */
+            
+            --transition-speed: 0.35s;
+            --font-main: 'Plus Jakarta Sans', sans-serif;
+            --font-mono: 'Share Tech Mono', monospace;
+        }
+
+        [data-theme="light"] {
+            /* Theme: Light */
+            --bg-gradient: radial-gradient(circle at 50% 0%, #e2e8f0 0%, #cbd5e1 100%);
+            --glass-bg: rgba(255, 255, 255, 0.45);
+            --glass-border: rgba(0, 0, 0, 0.08);
+            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.08);
+            --glass-glow: rgba(79, 172, 254, 0.1);
+            
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            
+            --color-primary: #0284c7;
+            --color-secondary: #7c3aed;
+            --color-success: #16a34a;
+            --color-warning: #d97706;
+            --color-danger: #dc2626;
+            --color-neutral: #2563eb;
+        }
+
+        /* Reset & Global Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: background var(--transition-speed) ease;
+        }
+
+        /* Ambient Fluid Background Canvas */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Floating Light Particles Background Effect */
+        .glass-glow-effect {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--glass-glow) 0%, transparent 70%);
+            top: -200px;
+            left: -100px;
+            pointer-events: none;
+            z-index: -1;
+            animation: slow-drift 20s infinite alternate ease-in-out;
+        }
+
+        @keyframes slow-drift {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(100px, 150px) scale(1.2); }
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--glass-border);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* ==========================================
+           2. ANIMATIONS & REUSABLE UTILITIES
+           ========================================== */
+        .pulse-slow {
+            animation: pulse-glow 3s infinite ease-in-out;
+        }
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.8; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.02); }
+        }
+
+        .spin-slow {
+            animation: spin 20s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Glass Container Class */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: var(--glass-shadow);
+            transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), 
+                        box-shadow 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .glass-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Glass Reflection Shine Overlay */
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -50%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                to right,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.03) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            transform: skewX(-25deg);
+            transition: 0.75s;
+            pointer-events: none;
+        }
+        .glass-card:hover::before {
+            left: 125%;
+        }
+
+        /* Skeleton Loading States */
+        .skeleton {
+            background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.05) 75%);
+            background-size: 200% 100%;
+            animation: loading-skeleton 1.5s infinite;
+            border-radius: 8px;
+        }
+        @keyframes loading-skeleton {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* ==========================================
+           3. SPLASH SCREEN / APP INIT LOADER
+           ========================================== */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #0a0d16;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.8s ease, visibility 0.8s;
+        }
+        #splash-screen.fade-out {
+            opacity: 0;
+            visibility: hidden;
+        }
+        .splash-logo {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .splash-icon {
+            width: 64px;
+            height: 64px;
+            fill: var(--color-primary);
+            filter: drop-shadow(0 0 12px var(--color-primary));
+        }
+        .splash-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            color: #fff;
+        }
+        .splash-title span {
+            color: var(--color-primary);
+        }
+        .splash-loader-bar {
+            width: 240px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        .splash-loader-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+            border-radius: 10px;
+            transition: width 0.2s ease-out;
+        }
+
+        /* ==========================================
+           4. LAYOUT STRUCTURE
+           ========================================== */
+        header {
+            padding: 24px 4%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .brand-logo {
+            width: 38px;
+            height: 38px;
+            fill: var(--color-primary);
+        }
+        .brand-text h1 {
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            line-height: 1;
+        }
+        .brand-text p {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* System Connectivity Status Bar */
+        .system-status {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            padding: 6px 12px;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--color-success);
+            box-shadow: 0 0 8px var(--color-success);
+        }
+        .status-dot.offline {
+            background-color: var(--color-danger);
+            box-shadow: 0 0 8px var(--color-danger);
+        }
+        .status-dot.simulating {
+            background-color: var(--color-warning);
+            box-shadow: 0 0 8px var(--color-warning);
+        }
+
+        /* Navigation Toggles and Actions */
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .action-btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.05);
+        }
+        .action-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+        .badge-container {
+            position: relative;
+        }
+        .btn-badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            background: var(--color-danger);
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Dashboard Grid System */
+        main {
+            padding: 24px 4% 80px 4%;
+            max-width: 1600px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 1100px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .dashboard-col {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* ==========================================
+           5. SECTIONAL STYLES (HOME DASHBOARD)
+           ========================================== */
+        .weather-hero {
+            background: linear-gradient(135deg, rgba(20, 30, 48, 0.8), rgba(36, 59, 85, 0.8));
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 280px;
+        }
+        .weather-hero-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .time-date-container {
+            display: flex;
+            flex-direction: column;
+        }
+        .digital-clock {
+            font-family: var(--font-mono);
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: -1px;
+            line-height: 1;
+            color: var(--color-primary);
+            text-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
+        }
+        .calendar-date {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-top: 4px;
+        }
+        .location-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        .location-badge svg {
+            width: 16px;
+            height: 16px;
+            fill: var(--color-primary);
+        }
+        
+        .weather-hero-bottom {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            margin-top: 32px;
+        }
+        .weather-main-temp {
+            display: flex;
+            align-items: flex-start;
+        }
+        .temp-val {
+            font-size: 4.5rem;
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: -2px;
+        }
+        .temp-unit {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--color-primary);
+            margin-top: 8px;
+        }
+        .weather-summary-text {
+            display: flex;
+            flex-direction: column;
+            margin-left: 12px;
+        }
+        .weather-desc {
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-transform: capitalize;
+        }
+        .weather-feels-like {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .weather-main-icon-container {
+            width: 110px;
+            height: 110px;
+            filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.15));
+        }
+
+        /* Parameter Grid (Atmospherics) */
+        .atmos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 16px;
+        }
+        .atmos-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 8px;
+        }
+        .atmos-card svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--text-secondary);
+        }
+        .atmos-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .atmos-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        /* Search Bar Component */
+        .search-box {
+            display: flex;
+            gap: 12px;
+        }
+        .search-input-wrapper {
+            position: relative;
+            flex: 1;
+        }
+        .search-input-wrapper svg {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            fill: var(--text-muted);
+        }
+        .search-box input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 14px 16px 14px 48px;
+            color: var(--text-primary);
+            font-family: var(--font-main);
+            font-size: 0.9rem;
+            outline: none;
+            transition: 0.3s;
+        }
+        .search-box input:focus {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--color-primary);
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.15);
+        }
+        .btn-search {
+            background: linear-gradient(135deg, var(--color-primary), var(--color-neutral));
+            color: #000;
+            font-weight: 700;
+            border: none;
+            padding: 0 24px;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-search:hover {
+            transform: scale(1.02);
+            filter: brightness(1.1);
+        }
+
+        /* Map UI Placeholder */
+        .map-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .map-placeholder {
+            height: 180px;
+            background: radial-gradient(circle at 50% 50%, rgba(0, 242, 254, 0.1) 0%, rgba(0,0,0,0.3) 100%), 
+                        repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 21px),
+                        repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 21px);
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .map-grid-pin {
+            position: absolute;
+            top: 40%;
+            left: 55%;
+            width: 24px;
+            height: 24px;
+            background: rgba(0, 242, 254, 0.2);
+            border: 2px solid var(--color-primary);
+            border-radius: 50%;
+            animation: pulse-pin 2s infinite ease-out;
+        }
+        @keyframes pulse-pin {
+            0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(0, 242, 254, 0.7); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(0, 242, 254, 0); }
+            100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(0, 242, 254, 0); }
+        }
+        .map-label {
+            font-size: 0.75rem;
+            font-family: var(--font-mono);
+            color: var(--text-secondary);
+            z-index: 2;
+            background: rgba(0,0,0,0.6);
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--glass-border);
+        }
+
+        /* Weather Forecast Layout */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+        }
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 8px;
+            transition: 0.2s;
+        }
+        .tab-btn.active {
+            background: rgba(255,255,255,0.08);
+            color: var(--color-primary);
+        }
+        .forecast-scroll-container {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+        .forecast-card {
+            min-width: 100px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 16px 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            text-align: center;
+        }
+        .forecast-time {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        .forecast-icon {
+            width: 38px;
+            height: 38px;
+        }
+        .forecast-temp {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+        .forecast-pop {
+            font-size: 0.7rem;
+            color: var(--color-primary);
+            font-weight: 600;
+        }
+
+        /* ==========================================
+           6. SECTIONAL STYLES (LIVE DRAINAGE MONITOR)
+           ========================================== */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-title svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--color-primary);
+        }
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--color-danger);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            animation: pulse-glow 1.5s infinite;
+        }
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--color-danger);
+        }
+
+        /* Telemetry Dashboard Widgets Grid */
+        .telemetry-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 600px) {
+            .telemetry-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Dynamic Gauge Widget */
+        .gauge-widget {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+        }
+        .gauge-container {
+            position: relative;
+            width: 140px;
+            height: 140px;
+        }
+        .gauge-ring {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+        .gauge-circle-bg {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.05);
+            stroke-width: 10;
+        }
+        .gauge-circle-fill {
+            fill: none;
+            stroke-width: 10;
+            stroke-dasharray: 377; /* 2 * pi * 60 */
+            stroke-dashoffset: 377;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.3s;
+        }
+        .gauge-value-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        .gauge-num {
+            font-family: var(--font-mono);
+            font-size: 1.8rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .gauge-unit {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .gauge-title {
+            margin-top: 16px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
+
+        /* Progress Bar Widget for Rain Sensor */
+        .water-bar-container {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            height: 12px;
+            border-radius: 50px;
+            overflow: hidden;
+            margin-top: 8px;
+            border: 1px solid var(--glass-border);
+        }
+        .water-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+            border-radius: 50px;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* ==========================================
+           7. FLOOD RISK ANALYSIS
+           ========================================== */
+        .risk-display-card {
+            text-align: center;
+            background: linear-gradient(135deg, rgba(20, 26, 46, 0.6) 0%, rgba(30, 41, 59, 0.4) 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+        .risk-level-badge {
+            font-family: var(--font-mono);
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            padding: 8px 32px;
+            border-radius: 12px;
+            text-shadow: 0 0 15px currentColor;
+            transition: 0.3s;
+        }
+        .risk-level-low { color: var(--color-success); }
+        .risk-level-med { color: var(--color-warning); }
+        .risk-level-high { color: var(--color-danger); }
+        .risk-level-crit { color: #ffffff; background: var(--color-danger); }
+
+        .risk-explanation {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            max-width: 400px;
+        }
+
+        /* ==========================================
+           8. EMERGENCY ALERT CENTER
+           ========================================== */
+        .alerts-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .alert-item {
+            background: rgba(255, 46, 147, 0.05);
+            border: 1px solid rgba(255, 46, 147, 0.15);
+            padding: 16px;
+            border-radius: 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            animation: slide-in 0.3s ease-out;
+        }
+        .alert-item.system {
+            background: rgba(255, 179, 0, 0.05);
+            border: 1px solid rgba(255, 179, 0, 0.15);
+        }
+        .alert-item.success {
+            background: rgba(0, 230, 118, 0.05);
+            border: 1px solid rgba(0, 230, 118, 0.15);
+        }
+        .alert-icon {
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+        .alert-item:not(.system):not(.success) .alert-icon { fill: var(--color-danger); }
+        .alert-item.system .alert-icon { fill: var(--color-warning); }
+        .alert-item.success .alert-icon { fill: var(--color-success); }
+
+        .alert-content h4 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .alert-content p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        @keyframes slide-in {
+            from { transform: translateY(10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* ==========================================
+           9. LIVE ACTIVITY LOG & TIMELINE
+           ========================================== */
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-height: 220px;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+        .timeline-item {
+            display: flex;
+            gap: 16px;
+            position: relative;
+        }
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            top: 16px;
+            left: 7px;
+            width: 2px;
+            height: calc(100% + 4px);
+            background: var(--glass-border);
+            z-index: 1;
+        }
+        .timeline-item:last-child::after {
+            display: none;
+        }
+        .timeline-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--color-primary);
+            border: 3px solid var(--glass-bg);
+            z-index: 2;
+            margin-top: 3px;
+            flex-shrink: 0;
+        }
+        .timeline-content {
+            flex-grow: 1;
+        }
+        .timeline-text {
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .timeline-time {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            margin-top: 2px;
+        }
+
+        /* ==========================================
+           10. DIAGNOSTIC STATISTICS SECTION
+           ========================================== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        .stat-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            padding: 14px;
+            border-radius: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .stat-meta h5 {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+        .stat-meta p {
+            font-family: var(--font-mono);
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        /* ==========================================
+           11. PRESETS / SIMULATION CONSOLE (TEST DECK)
+           ========================================== */
+        .console-card {
+            border: 1px dashed var(--color-secondary);
+            background: rgba(157, 78, 221, 0.03);
+        }
+        .console-card:hover {
+            border-color: var(--color-secondary);
+        }
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .slider-label-wrapper {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .slider-label-wrapper span:last-child {
+            font-family: var(--font-mono);
+            color: var(--color-secondary);
+        }
+        .console-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+        }
+        .console-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--color-secondary);
+            cursor: pointer;
+            box-shadow: 0 0 8px var(--color-secondary);
+        }
+
+        /* Switch Toggle */
+        .toggle-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider-switch {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: .3s;
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+        }
+        .slider-switch:before {
+            position: absolute;
+            content: "";
+            height: 16px; width: 16px;
+            left: 3px; bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        input:checked + .slider-switch {
+            background-color: var(--color-secondary);
+        }
+        input:checked + .slider-switch:before {
+            transform: translateX(20px);
+        }
+
+        /* ==========================================
+           12. NOTIFICATION DRAWER & SETTINGS OVERLAY
+           ========================================== */
+        .panel-overlay {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 380px;
+            height: 100vh;
+            background: rgba(10, 13, 22, 0.95);
+            backdrop-filter: blur(25px);
+            border-left: 1px solid var(--glass-border);
+            z-index: 1000;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+            transition: right 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            padding: 32px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        .panel-overlay.active {
+            right: 0;
+        }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .panel-close {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 1.5rem;
+        }
+
+        /* ==========================================
+           13. ERROR HANDLING INTERFACE
+           ========================================== */
+        .error-card-toast {
+            background: linear-gradient(135deg, rgba(220, 38, 38, 0.9), rgba(153, 27, 27, 0.9));
+            color: white;
+            padding: 16px 20px;
+            border-radius: 16px;
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            z-index: 9999;
+            transform: translateY(150%);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .error-card-toast.active {
+            transform: translateY(0);
+        }
+
+        /* Helper Classes */
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .text-center { text-align: center; }
+        .mt-12 { margin-top: 12px; }
+        .gap-8 { display: flex; gap: 8px; }
+    </style>
+</head>
+<body>
+
+    <!-- Fluid Particle Canvas Effect Layer -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- App Boot Splash Screen -->
+    <div id="splash-screen">
+        <div class="splash-logo">
+            <svg class="splash-icon pulse-slow" viewBox="0 0 24 24">
+                <path d="M12 2L1 21h22L12 2zm0 4l7.53 13H4.47L12 6zm-1 6v3h2v-3h-2zm0 4v2h2v-2h-2z"/>
+            </svg>
+            <div class="splash-title">Smart<span>Drain</span></div>
+        </div>
+        <div class="splash-loader-bar">
+            <div class="splash-loader-fill" id="splash-progress"></div>
+        </div>
+        <p style="font-size: 0.8rem; color: var(--text-muted); font-family: var(--font-mono);" id="splash-status">Booting Telemetry Link...</p>
+    </div>
+
+    <!-- MAIN HEADER BAR -->
+    <header>
+        <div class="brand">
+            <svg class="brand-logo" viewBox="0 0 24 24">
+                <path d="M12 2L2 22h20L12 2zm0 3.99L19.53 19H4.47L12 5.99zM13 16h-2v2h2v-2zm0-6h-2v4h2v-4z"/>
+            </svg>
+            <div class="brand-text">
+                <h1>SmartDrain</h1>
+                <p>Telemetry Hub v4.2.0</p>
+            </div>
+        </div>
+
+        <div class="system-status">
+            <div class="status-pill">
+                <span class="status-dot" id="status-firebase"></span> Firebase
+            </div>
+            <div class="status-pill">
+                <span class="status-dot" id="status-weather"></span> Weather API
+            </div>
+            <div class="status-pill">
+                <span class="status-dot" id="status-net"></span> Network
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <button class="action-btn badge-container" onclick="toggleDrawer('notification-drawer')" aria-label="Notifications">
+                <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+                <span class="btn-badge" id="noti-badge">3</span>
+            </button>
+            <button class="action-btn" onclick="toggleDrawer('settings-drawer')" aria-label="Settings">
+                <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- DASHBOARD VIEW -->
+    <main>
+        
+        <!-- COLUMN 1: WEATHER & ATMOSPHERIC INSIGHTS -->
+        <div class="dashboard-col">
+            
+            <!-- Weather Hero Widget -->
+            <section class="glass-card weather-hero">
+                <div class="weather-hero-top">
+                    <div class="time-date-container">
+                        <span class="digital-clock" id="clock-display">00:00:00</span>
+                        <span class="calendar-date" id="date-display">...</span>
+                    </div>
+                    <div class="location-badge">
+                        <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                        <span id="loc-display">Detecting...</span>
+                    </div>
+                </div>
+
+                <div class="weather-hero-bottom">
+                    <div class="weather-main-temp">
+                        <div class="temp-val" id="weather-temp-main">--</div>
+                        <div class="temp-unit" id="weather-temp-unit">°C</div>
+                        <div class="weather-summary-text">
+                            <span class="weather-desc" id="weather-desc-text">Syncing...</span>
+                            <span class="weather-feels-like" id="weather-feels-text">Feels like --°</span>
+                        </div>
+                    </div>
+                    <div class="weather-main-icon-container" id="weather-hero-icon">
+                        <!-- Default placeholder animated icon -->
+                        <svg viewBox="0 0 24 24" class="spin-slow" style="width:100%; height:100%; fill: var(--color-primary);">
+                            <path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3zm0-10c.55 0 1-.45 1-1V3c0-.55-.45-1-1-1s-1 .45-1 1v1c0 .55.45 1 1 1zm0 14c-.55 0-1 .45-1 1v1c0 .55.45 1 1 1s1-.45 1-1v-1c0-.55-.45-1-1-1zm8-8c0-.55-.45-1-1-1h-1c-.55 0-1 .45-1 1s.45 1 1 1h1c.55 0 1-.45 1-1zM6 12c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1s.45 1 1 1h1c.55 0 1-.45 1-1zm11.66-5.66c-.39-.39-1.02-.39-1.41 0l-.71.71c-.39.39-.39 1.02 0 1.41s1.02.39 1.41 0l.71-.71c.39-.39.39-1.02 0-1.41zm-9.9 9.9c-.39-.39-1.02-.39-1.41 0l-.71.71c-.39.39-.39 1.02 0 1.41s1.02.39 1.41 0l.71-.71c.39-.39.39-1.02 0-1.41zm9.9 0c.39-.39.39-1.02 0-1.41l-.71-.71c-.39-.39-1.02-.39-1.41 0s-.39 1.02 0 1.41l.71.71c.39.39 1.02.39 1.41 0zM7.76 6.34c.39-.39.39-1.02 0-1.41l-.71-.71c-.39-.39-1.02-.39-1.41 0s-.39 1.02 0 1.41l.71.71c.39.39 1.02.39 1.41 0z"/>
+                        </svg>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Search Section -->
+            <section class="glass-card search-box">
+                <div class="search-input-wrapper">
+                    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    <input type="text" id="city-search-input" placeholder="Search monitoring site / city..." aria-label="City Search">
+                </div>
+                <button class="btn-search" onclick="handleCitySearch()">Query</button>
+            </section>
+
+            <!-- Atmospheric Secondary Parameters Grid -->
+            <section class="atmos-grid">
+                <div class="atmos-card">
+                    <svg viewBox="0 0 24 24"><path d="M12.56 1.43c-.35-.36-.92-.36-1.27 0C7.05 5.76 4 9.79 4 13.5 4 17.9 7.58 21.5 12 21.5s8-3.6 8-8c0-3.71-3.05-7.74-7.44-12.07zM12 19.5c-3.31 0-6-2.69-6-6 0-2.95 2.57-6.52 6-9.98 3.43 3.46 6 7.03 6 9.98 0 3.31-2.69 6-6 6z"/></svg>
+                    <span class="atmos-label">Humidity</span>
+                    <span class="atmos-value" id="val-humidity">--%</span>
+                </div>
+                <div class="atmos-card">
+                    <svg viewBox="0 0 24 24"><path d="M13.96 12.29l-2.07-3.06c-.11-.16-.3-.23-.48-.17l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41H2.72c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L-4.63 9.3c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                    <span class="atmos-label">Wind Speed</span>
+                    <span class="atmos-value" id="val-wind">-- m/s</span>
+                </div>
+                <div class="atmos-card">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                    <span class="atmos-label">Baro Pressure</span>
+                    <span class="atmos-value" id="val-pressure">-- hPa</span>
+                </div>
+                <div class="atmos-card">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.53c-.26-.81-1-1.4-1.9-1.4h-1v-3c0-.55-.45-1-1-1h-6v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                    <span class="atmos-label">Visibility</span>
+                    <span class="atmos-value" id="val-visibility">-- km</span>
+                </div>
+            </section>
+
+            <!-- Map UI & Geo Coordinate Telemetry -->
+            <section class="glass-card map-section">
+                <div class="flex-between">
+                    <span class="section-title" style="margin: 0;">Geo Positioning</span>
+                    <span id="geo-coordinates" style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--color-primary);">Lat: -- Lon: --</span>
+                </div>
+                <div class="map-placeholder">
+                    <div class="map-grid-pin"></div>
+                    <span class="map-label" id="map-telemetry-label">Active Site Vector</span>
+                </div>
+            </section>
+
+            <!-- Weather Forecast Carousel Widget -->
+            <section class="glass-card">
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchForecastTab('hourly')">Hourly Forecast</button>
+                    <button class="tab-btn" onclick="switchForecastTab('daily')">5-Day Forecast</button>
+                </div>
+                <div class="forecast-scroll-container" id="forecast-render-deck">
+                    <!-- Cards injected programmatically -->
+                    <div class="forecast-card skeleton" style="height: 110px; width: 100px;"></div>
+                    <div class="forecast-card skeleton" style="height: 110px; width: 100px;"></div>
+                    <div class="forecast-card skeleton" style="height: 110px; width: 100px;"></div>
+                    <div class="forecast-card skeleton" style="height: 110px; width: 100px;"></div>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- COLUMN 2: REAL-TIME IoT DRAINAGE SENSORS & FLOOD METRICS -->
+        <div class="dashboard-col">
+            
+            <!-- IoT Live Drainage Status Grid -->
+            <section class="glass-card">
+                <div class="section-header">
+                    <span class="section-title">
+                        <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H5V5h12v8z"/></svg>
+                        Drainage Telemetry
+                    </span>
+                    <div class="live-indicator">
+                        <span class="live-dot"></span> Live ESP32 Feed
+                    </div>
+                </div>
+
+                <div class="telemetry-grid">
+                    <!-- Gauge 1: Water Depth Percentage -->
+                    <div class="gauge-widget">
+                        <div class="gauge-container">
+                            <svg class="gauge-ring" viewBox="0 0 140 140">
+                                <circle class="gauge-circle-bg" cx="70" cy="70" r="60"/>
+                                <circle class="gauge-circle-fill" id="gauge-depth-fill" cx="70" cy="70" r="60" stroke="var(--color-primary)"/>
+                            </svg>
+                            <div class="gauge-value-display">
+                                <span class="gauge-num" id="gauge-depth-val">0</span>
+                                <span class="gauge-unit">%</span>
+                            </div>
+                        </div>
+                        <span class="gauge-title">Water Level Depth</span>
+                    </div>
+
+                    <!-- Gauge 2: Liquid Flow Rate Sensor -->
+                    <div class="gauge-widget">
+                        <div class="gauge-container">
+                            <svg class="gauge-ring" viewBox="0 0 140 140">
+                                <circle class="gauge-circle-bg" cx="70" cy="70" r="60"/>
+                                <circle class="gauge-circle-fill" id="gauge-flow-fill" cx="70" cy="70" r="60" stroke="var(--color-secondary)"/>
+                            </svg>
+                            <div class="gauge-value-display">
+                                <span class="gauge-num" id="gauge-flow-val">0</span>
+                                <span class="gauge-unit">%</span>
+                            </div>
+                        </div>
+                        <span class="gauge-title">Precipitation Sensor</span>
+                    </div>
+                </div>
+
+                <div class="mt-12">
+                    <div class="flex-between" style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">
+                        <span>Sewer Surcharge Overflow Status</span>
+                        <span id="overflow-flag" style="color: var(--color-success);">NORMAL</span>
+                    </div>
+                    <div class="water-bar-container">
+                        <div class="water-bar-fill" id="overflow-bar-fill"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Dynamic Flood Risk Matrix (Predictive Analytics) -->
+            <section class="glass-card risk-display-card">
+                <span class="section-title">Flood Risk Index</span>
+                <div class="risk-level-badge risk-level-low" id="risk-level-banner">LOW</div>
+                <p class="risk-explanation" id="risk-narrative">
+                    Drainage metrics optimal. Zero precipitation recorded locally. No flood events forecasted.
+                </p>
+            </section>
+
+            <!-- Real-time Emergency Warning Cards -->
+            <section class="glass-card">
+                <span class="section-title">Emergency Advisory Center</span>
+                <div class="alerts-wrapper mt-12" id="advisory-render-deck">
+                    <!-- Populated dynamically via JS -->
+                    <div class="alert-item success">
+                        <svg class="alert-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                        <div class="alert-content">
+                            <h4>All Systems Nominal</h4>
+                            <p>ESP32 array active. Municipal drain lines normal capacity. Risk low.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Live Diagnostic Stats & System Engine Check -->
+            <section class="glass-card">
+                <span class="section-title">Infrastructure Statistics</span>
+                <div class="stats-grid mt-12">
+                    <div class="stat-box">
+                        <div class="stat-meta">
+                            <h5>Engine Health</h5>
+                            <p id="stat-engine">100%</p>
+                        </div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-meta">
+                            <h5>Water Peak</h5>
+                            <p id="stat-peak">-- %</p>
+                        </div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-meta">
+                            <h5>Total Alerts</h5>
+                            <p id="stat-alerts">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-meta">
+                            <h5>System Uptime</h5>
+                            <p id="stat-uptime">0h 0m</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Real-Time Activity Log Timeline -->
+            <section class="glass-card">
+                <span class="section-title">Live Sensor Activity log</span>
+                <div class="timeline mt-12" id="activity-timeline">
+                    <!-- Events Injected Dynamically -->
+                </div>
+            </section>
+
+            <!-- Simulated Telemetry Control Deck -->
+            <section class="glass-card console-card">
+                <div class="flex-between">
+                    <span class="section-title" style="color: var(--color-secondary);">Simulated Telemetry Deck</span>
+                    <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-secondary);">DEVELOPMENT SANDBOX</span>
+                </div>
+                <div class="slider-group">
+                    <div>
+                        <div class="slider-label-wrapper">
+                            <span>Sewer Level Depth Simulator</span>
+                            <span id="lbl-sim-depth">0%</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="15" class="console-slider" id="sim-depth-range">
+                    </div>
+                    <div>
+                        <div class="slider-label-wrapper">
+                            <span>Rain Intensity Simulator</span>
+                            <span id="lbl-sim-rain">0%</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="5" class="console-slider" id="sim-rain-range">
+                    </div>
+                    <div class="toggle-container">
+                        <span style="font-size: 0.8rem; font-weight: 600;">Hardware Sensor Status (Online)</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="sim-hardware-toggle" checked>
+                            <span class="slider-switch"></span>
+                        </label>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- NOTIFICATION SYSTEM PANEL DRAWER -->
+    <div class="panel-overlay" id="notification-drawer">
+        <div class="panel-header">
+            <h3>Notification History</h3>
+            <button class="panel-close" onclick="toggleDrawer('notification-drawer')">&times;</button>
+        </div>
+        <div class="alerts-wrapper" id="drawer-notifications-list" style="overflow-y: auto; flex-grow: 1;">
+            <!-- History listings -->
+        </div>
+    </div>
+
+    <!-- UTILITY SETTINGS PANEL DRAWER -->
+    <div class="panel-overlay" id="settings-drawer">
+        <div class="panel-header">
+            <h3>Diagnostic Configuration</h3>
+            <button class="panel-close" onclick="toggleDrawer('settings-drawer')">&times;</button>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:20px;">
+            <div>
+                <label style="font-size:0.85rem; font-weight:600; display:block; margin-bottom:8px;">Theme Variant</label>
+                <div class="gap-8">
+                    <button class="tab-btn active" id="btn-theme-dark" style="flex:1;" onclick="setThemeMode('dark')">Dark Mode</button>
+                    <button class="tab-btn" id="btn-theme-light" style="flex:1;" onclick="setThemeMode('light')">Light Mode</button>
+                </div>
+            </div>
+            <div>
+                <label style="font-size:0.85rem; font-weight:600; display:block; margin-bottom:8px;">Temperature Scaling</label>
+                <div class="gap-8">
+                    <button class="tab-btn active" id="btn-unit-c" style="flex:1;" onclick="setTempScale('C')">Celsius (°C)</button>
+                    <button class="tab-btn" id="btn-unit-f" style="flex:1;" onclick="setTempScale('F')">Fahrenheit (°F)</button>
+                </div>
+            </div>
+            <hr style="border:0; border-top: 1px solid var(--glass-border);">
+            <div class="toggle-container">
+                <span style="font-size: 0.85rem; font-weight:600;">Push Emergency Banner Alerts</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="setting-toggle-push" checked>
+                    <span class="slider-switch"></span>
+                </label>
+            </div>
+            <div class="toggle-container">
+                <span style="font-size: 0.85rem; font-weight:600;">Automated Local Refresh (30s)</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="setting-toggle-refresh" checked>
+                    <span class="slider-switch"></span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- ERROR DIAGNOSTIC SYSTEM ALERTS -->
+    <div class="error-card-toast" id="toast-network-err">
+        <svg style="width:24px; height:24px; fill:currentColor;" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+        <div>
+            <h5 style="font-weight:700;">Connection Loss Detected</h5>
+            <p style="font-size:0.75rem; opacity:0.9;">Telemetry data running offline in Simulation Mode.</p>
+        </div>
+    </div>
+
+    <!-- ==================================================
+         14. DEVELOPMENT & API CONNECTOR ENVIRONMENT (JS)
+         ================================================== -->
+    <script>
+        /* 
+         DEVELOPMENT ENVIRONMENT CONFIGURATION:
+         Insert authorization credentials within target blocks below 
+         to transition system from simulation parameters to production hardware streams.
+        */
+
+        // ==========================================
+        //  [OPENWEATHER MAP CREDENTIALS PORT]
+        // ==========================================
+        const API_KEY = "f7b146ce116864e32ed09e72703b9dc6"; 
+
+        // ==========================================
+        //  [FIREBASE SYSTEM DATABASE CREDENTIALS PORT]
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "",
+            authDomain: "",
+            databaseURL: "",
+            projectId: "",
+            storageBucket: "",
+            messagingSenderId: "",
+            appId: ""
+        };
+
+        // Real-time Global Operational Memory State variables
+        let appState = {
+            simulated: true, // Toggle local simulation state
+            sensorDepth: 15, // Dynamic hardware storage properties
+            sensorPrecip: 5, 
+            peakDepth: 15,
+            totalAlertCount: 0,
+            overflowStatus: false,
+            sensorHealthy: true,
+            temperatureScale: 'C',
+            lat: 0.00,
+            lon: 0.00,
+            geoLocName: "Jakarta, Indonesia",
+            currentWeatherTemp: 28.5,
+            currentWeatherHumidity: 78,
+            currentWeatherWind: 4.2,
+            currentWeatherPressure: 1012,
+            currentWeatherVisibility: 8.0,
+            currentWeatherDesc: "overcast clouds",
+            currentWeatherPop: 15, 
+            isOnline: true,
+            initTime: Date.now()
+        };
+
+        // ==========================================
+        //  CANVAS BACKGROUND RENDER FLUID CORE
+        // ==========================================
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height + canvas.height;
+                this.radius = Math.random() * 3 + 1;
+                this.speed = Math.random() * 0.8 + 0.2;
+                this.alpha = Math.random() * 0.3 + 0.1;
+                this.drift = Math.random() * 0.4 - 0.2;
+            }
+            update() {
+                this.y -= this.speed;
+                this.x += this.drift;
+                if (this.y < 0 || this.x < 0 || this.x > canvas.width) {
+                    this.reset();
+                }
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(0, 242, 254, ${this.alpha})`;
+                ctx.fill();
+            }
+        }
+
+        // Generate fluid density map
+        for (let i = 0; i < 40; i++) {
+            particles.push(new Particle());
+        }
+
+        function animateBg() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animateBg);
+        }
+        animateBg();
+
+        // ==========================================
+        //  SPLASH BOOT SEQUENCE ROUTER
+        // ==========================================
+        window.addEventListener('DOMContentLoaded', () => {
+            const progress = document.getElementById('splash-progress');
+            const statusText = document.getElementById('splash-status');
+            const steps = [
+                { prg: 20, txt: 'Parsing CSS Rulesets...' },
+                { prg: 45, txt: 'Establishing Device Port Stream...' },
+                { prg: 70, txt: 'Handshaking Security Tokens...' },
+                { prg: 100, txt: 'System Telemetry Active.' }
+            ];
+
+            let stepIdx = 0;
+            const bootTimer = setInterval(() => {
+                if (stepIdx < steps.length) {
+                    progress.style.width = steps[stepIdx].prg + '%';
+                    statusText.innerText = steps[stepIdx].txt;
+                    stepIdx++;
+                } else {
+                    clearInterval(bootTimer);
+                    document.getElementById('splash-screen').classList.add('fade-out');
+                    initializeEngine();
+                }
+            }, 350);
+        });
+
+        // ==========================================
+        //  CORE INITIALIZER SYSTEM & CHRONO
+        // ==========================================
+        function initializeEngine() {
+            startClock();
+            getLocation();
+            setupSandboxControls();
+            
+            // Initial render call
+            recalculateOperationalMetrics();
+            
+            // Render basic alerts
+            addActivityLog("SmartDrain Core Process Active", "info");
+            addActivityLog("Simulated Telemetry Matrix Online", "warning");
+
+            // Handle offline check
+            window.addEventListener('online', checkNetStatus);
+            window.addEventListener('offline', checkNetStatus);
+            checkNetStatus();
+
+            // Check API Keys & initialize cloud hooks
+            verifyPlatformAPIs();
+
+            // Self Diagnostics Clock Loop
+            setInterval(() => {
+                if(document.getElementById('setting-toggle-refresh').checked) {
+                    refreshLocalSensors();
+                }
+            }, 30000);
+        }
+
+        function startClock() {
+            const clockEl = document.getElementById('clock-display');
+            const dateEl = document.getElementById('date-display');
+            
+            setInterval(() => {
+                const now = new Date();
+                clockEl.innerText = now.toTimeString().split(' ')[0];
+                dateEl.innerText = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: '2-digit', year: 'numeric' });
+                
+                // Track dynamic diagnostic runtime
+                const diffMs = Date.now() - appState.initTime;
+                const hours = Math.floor(diffMs / 3600000);
+                const minutes = Math.floor((diffMs % 3600000) / 60000);
+                document.getElementById('stat-uptime').innerText = `${hours}h ${minutes}m`;
+            }, 1000);
+        }
+
+        function checkNetStatus() {
+            appState.isOnline = navigator.onLine;
+            const netDot = document.getElementById('status-net');
+            const toast = document.getElementById('toast-network-err');
+            
+            if (appState.isOnline) {
+                netDot.className = "status-dot";
+                toast.classList.remove('active');
+            } else {
+                netDot.className = "status-dot offline";
+                toast.classList.add('active');
+                addActivityLog("Local Network Signal Offline", "error");
+            }
+        }
+
+        function verifyPlatformAPIs() {
+            const weatherDot = document.getElementById('status-weather');
+            const firebaseDot = document.getElementById('status-firebase');
+
+            // Weather API configuration test
+            if (API_KEY === "PASTE_OPENWEATHER_API_KEY_HERE" || API_KEY.trim() === "") {
+                weatherDot.className = "status-dot simulating";
+                addActivityLog("Weather Engine running in Simulation Mode", "info");
+            } else {
+                weatherDot.className = "status-dot";
+                getCurrentWeather();
+            }
+
+            // Firebase configuration test
+            if (!firebaseConfig.apiKey || firebaseConfig.apiKey.trim() === "") {
+                firebaseDot.className = "status-dot simulating";
+                addActivityLog("Firebase running in Simulation Mode", "info");
+            } else {
+                firebaseDot.className = "status-dot";
+                connectFirebase();
+            }
+        }
+
+        // ==========================================
+        //  LOCATION SEARCH & GEO LOCATION ENGINE
+        // ==========================================
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        appState.lat = position.coords.latitude.toFixed(4);
+                        appState.lon = position.coords.longitude.toFixed(4);
+                        document.getElementById('geo-coordinates').innerText = `Lat: ${appState.lat} Lon: ${appState.lon}`;
+                        addActivityLog("GPS Permission Granted", "success");
+                        queryCoordsToLocation();
+                    },
+                    (error) => {
+                        addActivityLog("GPS denied. Local fallback assigned.", "warning");
+                        appState.lat = -6.2088; // Defaulting coordinate properties
+                        appState.lon = 106.8456;
+                        document.getElementById('geo-coordinates').innerText = `Lat: ${appState.lat} Lon: ${appState.lon}`;
+                    }
+                );
+            }
+        }
+
+        function queryCoordsToLocation() {
+            if(API_KEY === "PASTE_OPENWEATHER_API_KEY_HERE") {
+                appState.geoLocName = "Jakarta, Indonesia";
+                document.getElementById('loc-display').innerText = appState.geoLocName;
+                return;
+            }
+            
+            const url = `https://api.openweathermap.org/geo/1.0/reverse?lat=${appState.lat}&lon=${appState.lon}&limit=1&appid=${API_KEY}`;
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    if(data && data[0]) {
+                        appState.geoLocName = `${data[0].name}, ${data[0].country}`;
+                        document.getElementById('loc-display').innerText = appState.geoLocName;
+                        getCurrentWeather();
+                    }
+                })
+                .catch(() => {
+                    addActivityLog("Local Reverse Geocoding Fault", "error");
+                });
+        }
+
+        function handleCitySearch() {
+            const query = document.getElementById('city-search-input').value;
+            if(!query || query.trim() === "") return;
+
+            addActivityLog(`Querying Location: ${query}`, "info");
+
+            if(API_KEY === "PASTE_OPENWEATHER_API_KEY_HERE") {
+                // Mock search for development sandboxing
+                appState.geoLocName = query;
+                document.getElementById('loc-display').innerText = query;
+                addActivityLog(`Local Simulated Site target: ${query}`, "success");
+                return;
+            }
+
+            const url = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(query)}&limit=1&appid=${API_KEY}`;
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    if(data && data[0]) {
+                        appState.lat = data[0].lat.toFixed(4);
+                        appState.lon = data[0].lon.toFixed(4);
+                        appState.geoLocName = `${data[0].name}, ${data[0].country}`;
+                        
+                        document.getElementById('loc-display').innerText = appState.geoLocName;
+                        document.getElementById('geo-coordinates').innerText = `Lat: ${appState.lat} Lon: ${appState.lon}`;
+                        
+                        addActivityLog(`Site Changed: ${appState.geoLocName}`, "success");
+                        getCurrentWeather();
+                    } else {
+                        addActivityLog("No matching coordinates", "warning");
+                    }
+                })
+                .catch(() => {
+                    addActivityLog("Endpoint search mapping failed", "error");
+                });
+        }
+
+        // ==========================================
+        //  OPENWEATHER WEATHER DATA ENGINE (LIVE)
+        // ==========================================
+        function getCurrentWeather() {
+            if (API_KEY === "PASTE_OPENWEATHER_API_KEY_HERE") {
+                simulateWeatherResponse();
+                return;
+            }
+
+            const url = `https://api.openweathermap.org/data/2.5/weather?lat=${appState.lat}&lon=${appState.lon}&units=metric&appid=${API_KEY}`;
+            fetch(url)
+                .then(res => {
+                    if(!res.ok) throw new Error("API call limit or network failure");
+                    return res.json();
+                })
+                .then(data => {
+                    appState.currentWeatherTemp = data.main.temp;
+                    appState.currentWeatherHumidity = data.main.humidity;
+                    appState.currentWeatherWind = data.wind.speed;
+                    appState.currentWeatherPressure = data.main.pressure;
+                    appState.currentWeatherVisibility = (data.visibility / 1000);
+                    appState.currentWeatherDesc = data.weather[0].description;
+                    
+                    updateWeatherDashboardView();
+                    getForecast();
+                })
+                .catch(err => {
+                    addActivityLog("Failed to sync live weather metrics.", "error");
+                    simulateWeatherResponse();
+                });
+        }
+
+        function getForecast() {
+            if (API_KEY === "PASTE_OPENWEATHER_API_KEY_HERE") {
+                simulateForecastResponse();
+                return;
+            }
+
+            const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${appState.lat}&lon=${appState.lon}&units=metric&appid=${API_KEY}`;
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    renderForecastCards(data);
+                });
+        }
+
+        // ==========================================
+        //  WEATHER SIMULATION PLATFORMS
+        // ==========================================
+        function simulateWeatherResponse() {
+            // Generates believable simulated ambient values
+            appState.currentWeatherTemp = 28 + (Math.sin(Date.now() / 600000) * 3);
+            appState.currentWeatherHumidity = Math.round(75 + (Math.sin(Date.now() / 300000) * 10));
+            appState.currentWeatherWind = parseFloat((3.5 + Math.random() * 2).toFixed(1));
+            appState.currentWeatherPressure = Math.round(1011 + (Math.random() * 4));
+            appState.currentWeatherVisibility = 9.2;
+            appState.currentWeatherDesc = "Light Tropical Rain showers";
+            
+            updateWeatherDashboardView();
+            simulateForecastResponse();
+        }
+
+        function simulateForecastResponse() {
+            const mockContainer = document.getElementById('forecast-render-deck');
+            mockContainer.innerHTML = '';
+            
+            const hours = ['14:00', '17:00', '20:00', '23:00', '02:00', '05:00'];
+            hours.forEach((h, i) => {
+                const temp = Math.round(appState.currentWeatherTemp - (i * 0.8));
+                const pop = Math.min(100, Math.max(0, Math.round(appState.sensorPrecip * 1.2 + (i * 3))));
+                
+                const card = document.createElement('div');
+                card.className = 'forecast-card';
+                card.innerHTML = `
+                    <span class="forecast-time">${h}</span>
+                    <svg class="forecast-icon" style="fill: var(--color-primary);" viewBox="0 0 24 24">
+                        <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/>
+                    </svg>
+                    <span class="forecast-temp">${temp}°</span>
+                    <span class="forecast-pop">🌧 ${pop}%</span>
+                `;
+                mockContainer.appendChild(card);
+            });
+        }
+
+        function updateWeatherDashboardView() {
+            const activeScale = appState.temperatureScale;
+            let currentTemp = appState.currentWeatherTemp;
+            let feelsLike = currentTemp - 1.2;
+
+            if (activeScale === 'F') {
+                currentTemp = (currentTemp * 9/5) + 32;
+                feelsLike = (feelsLike * 9/5) + 32;
+            }
+
+            document.getElementById('weather-temp-main').innerText = Math.round(currentTemp);
+            document.getElementById('weather-temp-unit').innerText = `°${activeScale}`;
+            document.getElementById('weather-feels-text').innerText = `Feels like ${Math.round(feelsLike)}°`;
+            document.getElementById('weather-desc-text').innerText = appState.currentWeatherDesc;
+
+            document.getElementById('val-humidity').innerText = `${appState.currentWeatherHumidity}%`;
+            document.getElementById('val-wind').innerText = `${appState.currentWeatherWind} m/s`;
+            document.getElementById('val-pressure').innerText = `${appState.currentWeatherPressure} hPa`;
+            document.getElementById('val-visibility').innerText = `${appState.currentWeatherVisibility.toFixed(1)} km`;
+        }
+
+        function renderForecastCards(apiData) {
+            const container = document.getElementById('forecast-render-deck');
+            container.innerHTML = '';
+
+            const list = apiData.list.slice(0, 6);
+            list.forEach(item => {
+                const time = item.dt_txt.split(' ')[1].slice(0, 5);
+                const temp = Math.round(item.main.temp);
+                const pop = Math.round(item.pop * 100);
+
+                const card = document.createElement('div');
+                card.className = 'forecast-card';
+                card.innerHTML = `
+                    <span class="forecast-time">${time}</span>
+                    <svg class="forecast-icon" style="fill: var(--color-primary);" viewBox="0 0 24 24">
+                        <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/>
+                    </svg>
+                    <span class="forecast-temp">${temp}°</span>
+                    <span class="forecast-pop">🌧 ${pop}%</span>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // ==========================================
+        //  SANDBOX SLIDER & TELEMETRY MANIPULATOR
+        // ==========================================
+        function setupSandboxControls() {
+            const depthRange = document.getElementById('sim-depth-range');
+            const rainRange = document.getElementById('sim-rain-range');
+            const hwToggle = document.getElementById('sim-hardware-toggle');
+
+            depthRange.addEventListener('input', (e) => {
+                appState.sensorDepth = parseInt(e.target.value);
+                document.getElementById('lbl-sim-depth').innerText = appState.sensorDepth + '%';
+                recalculateOperationalMetrics();
+            });
+
+            rainRange.addEventListener('input', (e) => {
+                appState.sensorPrecip = parseInt(e.target.value);
+                document.getElementById('lbl-sim-rain').innerText = appState.sensorPrecip + '%';
+                recalculateOperationalMetrics();
+            });
+
+            hwToggle.addEventListener('change', (e) => {
+                appState.sensorHealthy = e.target.checked;
+                recalculateOperationalMetrics();
+                addActivityLog(
+                    `ESP32 Sensor Arrays: ${appState.sensorHealthy ? 'Online' : 'Fault/Disconnected'}`,
+                    appState.sensorHealthy ? 'success' : 'error'
+                );
+            });
+        }
+
+        // ==========================================
+        //  CALCULATE PREDICATIVE RISK METRICS & GAUGES
+        // ==========================================
+        function recalculateOperationalMetrics() {
+            // Fetch tracking details for gauges
+            const depth = appState.sensorDepth;
+            const flow = appState.sensorPrecip;
+
+            // Gauge calculations: Max ring values (stroke-dasharray: 377)
+            const depthOffset = 377 - (377 * (depth / 100));
+            const flowOffset = 377 - (377 * (flow / 100));
+
+            document.getElementById('gauge-depth-fill').style.strokeDashoffset = depthOffset;
+            document.getElementById('gauge-depth-val').innerText = depth;
+
+            document.getElementById('gauge-flow-fill').style.strokeDashoffset = flowOffset;
+            document.getElementById('gauge-flow-val').innerText = flow;
+
+            // Assess Sewer Surcharge Risk
+            const combinedFlow = Math.round((depth + flow) / 2);
+            const overflowBar = document.getElementById('overflow-bar-fill');
+            const overflowFlag = document.getElementById('overflow-flag');
+
+            overflowBar.style.width = `${combinedFlow}%`;
+
+            if (combinedFlow > 85) {
+                overflowFlag.innerText = "SURCHARGE CRITICAL";
+                overflowFlag.style.color = "var(--color-danger)";
+                overflowBar.style.background = "var(--color-danger)";
+            } else if (combinedFlow > 60) {
+                overflowFlag.innerText = "WARNING OVERFLOW";
+                overflowFlag.style.color = "var(--color-warning)";
+                overflowBar.style.background = "var(--color-warning)";
+            } else {
+                overflowFlag.innerText = "NOMINAL CAPACITY";
+                overflowFlag.style.color = "var(--color-success)";
+                overflowBar.style.background = "linear-gradient(90deg, var(--color-primary), var(--color-secondary))";
+            }
+
+            // Tracking extreme peak depths
+            if (depth > appState.peakDepth) {
+                appState.peakDepth = depth;
+                document.getElementById('stat-peak').innerText = `${depth}%`;
+            }
+
+            calculatePredictiveFloodRisk();
+            renderActiveAdvisories();
+        }
+
+        function calculatePredictiveFloodRisk() {
+            const depth = appState.sensorDepth;
+            const rain = appState.sensorPrecip;
+            
+            const banner = document.getElementById('risk-level-banner');
+            const narrative = document.getElementById('risk-narrative');
+
+            // Algorithm mapping: Rain Probability or Precipitation intensity & Level thresholds
+            if (rain >= 90 && depth >= 90) {
+                banner.className = "risk-level-badge risk-level-crit";
+                banner.innerText = "CRITICAL FLOOD RISK";
+                narrative.innerText = "Imminent municipal flooding. Extreme local run-off capacity exceeded. Evacuation paths active.";
+            } else if (rain > 70 && depth > 70) {
+                banner.className = "risk-level-badge risk-level-high";
+                banner.innerText = "HIGH FLOOD RISK";
+                narrative.innerText = "Severe rainwater accumulation. Sub-grade systems surcharged. Low elevation alerts flagged.";
+            } else if (rain > 40 || depth > 40) {
+                banner.className = "risk-level-badge risk-level-med";
+                banner.innerText = "MEDIUM RISK";
+                narrative.innerText = "Moderate rain rates observed. Run-off channels reporting steady load escalation. Monitor metrics.";
+            } else {
+                banner.className = "risk-level-badge risk-level-low";
+                banner.innerText = "LOW RISK";
+                narrative.innerText = "Drainage metrics optimal. Zero precipitation recorded locally. No flood events forecasted.";
+            }
+        }
+
+        function renderActiveAdvisories() {
+            const deck = document.getElementById('advisory-render-deck');
+            deck.innerHTML = '';
+            let alertsGenerated = 0;
+
+            const errorCard = (title, body, type) => {
+                alertsGenerated++;
+                const item = document.createElement('div');
+                item.className = `alert-item ${type}`;
+                item.innerHTML = `
+                    <svg class="alert-icon" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+                    <div class="alert-content">
+                        <h4>${title}</h4>
+                        <p>${body}</p>
+                    </div>
+                `;
+                deck.appendChild(item);
+            };
+
+            if (!appState.sensorHealthy) {
+                errorCard("ESP32 Sensor Offline", "Physical connection failure. ESP32 gateway disconnected from hardware bridge.", "danger");
+            }
+
+            if (appState.sensorDepth > 85) {
+                errorCard("Severe High Sewer Water Level", "Water flow capacities exceed standard operations limit. High risk of localized backflow.", "danger");
+            }
+
+            if (appState.sensorPrecip > 80) {
+                errorCard("Excessive Heavy Precipitation", "Torrential rainfall rates overloading local catch basin capacities.", "system");
+            }
+
+            if (alertsGenerated === 0) {
+                deck.innerHTML = `
+                    <div class="alert-item success">
+                        <svg class="alert-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                        <div class="alert-content">
+                            <h4>All Systems Nominal</h4>
+                            <p>ESP32 array active. Municipal drain lines normal capacity. Risk low.</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Sync structural diagnostic indicators
+            document.getElementById('stat-alerts').innerText = alertsGenerated;
+            document.getElementById('stat-engine').innerText = appState.sensorHealthy ? "100%" : "30%";
+            document.getElementById('noti-badge').innerText = alertsGenerated;
+        }
+
+        // ==========================================
+        //  TIMELINE LOG CONSOLE BUILDER
+        // ==========================================
+        function addActivityLog(message, category = "info") {
+            const timeline = document.getElementById('activity-timeline');
+            const now = new Date();
+            const timestamp = now.toTimeString().split(' ')[0];
+
+            let dotColor = "var(--color-primary)";
+            if (category === "success") dotColor = "var(--color-success)";
+            if (category === "warning") dotColor = "var(--color-warning)";
+            if (category === "error") dotColor = "var(--color-danger)";
+
+            const logItem = document.createElement('div');
+            logItem.className = "timeline-item";
+            logItem.innerHTML = `
+                <div class="timeline-dot" style="background-color: ${dotColor}"></div>
+                <div class="timeline-content">
+                    <p class="timeline-text">${message}</p>
+                    <p class="timeline-time">${timestamp}</p>
+                </div>
+            `;
+            timeline.insertBefore(logItem, timeline.firstChild);
+
+            // Cap the list history count size to prevent DOM overflow
+            if(timeline.children.length > 10) {
+                timeline.removeChild(timeline.lastChild);
+            }
+
+            // Sync items horizontally with the custom notification side drawer list
+            const drawerList = document.getElementById('drawer-notifications-list');
+            const drawerItem = document.createElement('div');
+            drawerItem.className = `alert-item ${category === 'error' ? 'danger' : category === 'warning' ? 'system' : 'success'}`;
+            drawerItem.innerHTML = `
+                <div class="alert-content">
+                    <h4 style="text-transform: capitalize;">${category} Alert</h4>
+                    <p>${message} - Logged at ${timestamp}</p>
+                </div>
+            `;
+            drawerList.insertBefore(drawerItem, drawerList.firstChild);
+        }
+
+        // ==========================================
+        //  UI COMPONENT DRAWER INTERACTIONS
+        // ==========================================
+        function toggleDrawer(id) {
+            const drawer = document.getElementById(id);
+            drawer.classList.toggle('active');
+        }
+
+        function setThemeMode(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            document.getElementById('btn-theme-dark').className = theme === 'dark' ? 'tab-btn active' : 'tab-btn';
+            document.getElementById('btn-theme-light').className = theme === 'light' ? 'tab-btn active' : 'tab-btn';
+            addActivityLog(`Theme changed to ${theme} interface mode.`, "info");
+        }
+
+        function setTempScale(scale) {
+            appState.temperatureScale = scale;
+            document.getElementById('btn-unit-c').className = scale === 'C' ? 'tab-btn active' : 'tab-btn';
+            document.getElementById('btn-unit-f').className = scale === 'F' ? 'tab-btn active' : 'tab-btn';
+            updateWeatherDashboardView();
+        }
+
+        function refreshLocalSensors() {
+            if (appState.simulated) {
+                // Modulate ambient atmospheric details
+                getCurrentWeather();
+                addActivityLog("Atmospheric Weather parameters refreshed", "success");
+            }
+        }
+
+        function switchForecastTab(type) {
+            const buttons = document.querySelectorAll('.tabs .tab-btn');
+            buttons[0].className = type === 'hourly' ? 'tab-btn active' : 'tab-btn';
+            buttons[1].className = type === 'daily' ? 'tab-btn active' : 'tab-btn';
+
+            if(type === 'hourly') {
+                getForecast();
+            } else {
+                renderFiveDayForecastSim();
+            }
+        }
+
+        function renderFiveDayForecastSim() {
+            const container = document.getElementById('forecast-render-deck');
+            container.innerHTML = '';
+            
+            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+            days.forEach((day, idx) => {
+                const temp = Math.round(appState.currentWeatherTemp - (idx * 0.4));
+                const pop = Math.min(100, Math.max(0, Math.round(appState.sensorPrecip * 1.5 - (idx * 5))));
+
+                const card = document.createElement('div');
+                card.className = 'forecast-card';
+                card.innerHTML = `
+                    <span class="forecast-time">${day}</span>
+                    <svg class="forecast-icon" style="fill: var(--color-primary);" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                    </svg>
+                    <span class="forecast-temp">${temp}°</span>
+                    <span class="forecast-pop">🌧 ${pop}%</span>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // ==========================================
+        //  FIREBASE CLOUD SERVICE ATTACHMENT PORTS
+        // ==========================================
+        function connectFirebase() {
+            addActivityLog("Attempting real-time cloud database handshakes...", "info");
+            
+            /* 
+             DEVELOPER INTEGRATION STEPS:
+             1. Load CDN resources directly within this frame by adding:
+                <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app-compat.js"><\/script>
+                <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-database-compat.js"><\/script>
+             
+             2. Uncomment structural implementation rules below:
+             
+             try {
+                 firebase.initializeApp(firebaseConfig);
+                 const database = firebase.database();
+                 addActivityLog("Firebase Database connection verified.", "success");
+                 document.getElementById('status-firebase').className = "status-dot";
+                 listenForSensorUpdates(database);
+             } catch(err) {
+                 addActivityLog("Database handshake fault.", "error");
+                 document.getElementById('status-firebase').className = "status-dot offline";
+             }
+            */
+        }
+
+        function listenForSensorUpdates(databaseInstance) {
+            /*
+             3. Map your Arduino schema objects securely:
+             
+             const sensorsRef = databaseInstance.ref('sensors');
+             sensorsRef.on('value', (snapshot) => {
+                 const data = snapshot.val();
+                 if (data) {
+                     appState.sensorDepth = data.waterLevel || 0;
+                     appState.sensorPrecip = data.rainDetected || 0;
+                     appState.overflowStatus = data.overflow || false;
+                     
+                     // Sync UI elements dynamically
+                     recalculateOperationalMetrics();
+                     addActivityLog("Telemetry frame synced from Hardware ESP32", "success");
+                 }
+             }, (error) => {
+                 addActivityLog("Failed to fetch stream parameters.", "error");
+             });
+            */
+        }
+    </script>
+</body>
+</html>

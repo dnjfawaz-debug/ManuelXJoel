@@ -1,0 +1,2211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Chemistry Practice</title>
+<style>
+/* ============ Design tokens ============ */
+:root{
+  --bg:#07091a;
+  --bg-2:#0d1130;
+  --surface:rgba(255,255,255,.06);
+  --surface-2:rgba(255,255,255,.09);
+  --border:rgba(255,255,255,.12);
+  --text:#eaf0ff;
+  --muted:#96a0c8;
+  --primary:#5eead4;   /* teal */
+  --primary-2:#7c9bff; /* indigo */
+  --accent:#f472b6;    /* pink  */
+  --warn:#fbbf24;
+  --danger:#f87171;
+  --ok:#34d399;
+  --radius:16px;
+  --shadow:0 20px 60px -20px rgba(0,0,0,.6), 0 0 0 1px var(--border) inset;
+  --grad: linear-gradient(135deg,#5eead4 0%,#7c9bff 55%,#f472b6 100%);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font-family:"Inter","Segoe UI",system-ui,-apple-system,sans-serif;color:var(--text);background:var(--bg);overflow-x:hidden}
+body{
+  background:
+    radial-gradient(1200px 700px at 10% -10%, rgba(124,155,255,.25), transparent 60%),
+    radial-gradient(900px 700px at 110% 10%, rgba(244,114,182,.18), transparent 60%),
+    radial-gradient(800px 600px at 50% 120%, rgba(94,234,212,.18), transparent 60%),
+    linear-gradient(180deg,var(--bg) 0%,var(--bg-2) 100%);
+  min-height:100vh;
+}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3,h4{margin:0;font-weight:700;letter-spacing:-.01em}
+p{margin:0}
+::selection{background:rgba(94,234,212,.35)}
+
+/* ============ Reusable ============ */
+.app{min-height:100vh;display:flex;flex-direction:column}
+.hidden{display:none !important}
+.center{display:grid;place-items:center;min-height:100vh;padding:24px}
+.card{
+  background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.03));
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  backdrop-filter: blur(14px);
+}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:12px 18px;border-radius:12px;font-weight:600;font-size:14px;
+  border:1px solid var(--border);background:var(--surface);
+  transition:transform .15s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+.btn:hover{transform:translateY(-1px);background:var(--surface-2)}
+.btn:active{transform:translateY(0)}
+.btn.primary{
+  background:var(--grad);color:#0b1024;border:0;
+  box-shadow:0 10px 30px -12px rgba(94,234,212,.6);
+}
+.btn.primary:hover{filter:brightness(1.05)}
+.btn.ghost{background:transparent}
+.btn.danger{background:rgba(248,113,113,.15);border-color:rgba(248,113,113,.35);color:#fecaca}
+.btn.small{padding:8px 12px;font-size:13px;border-radius:10px}
+.input{
+  width:100%;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,.05);
+  border:1px solid var(--border);outline:0;transition:border-color .2s, background .2s;
+}
+.input:focus{border-color:rgba(94,234,212,.6);background:rgba(255,255,255,.08)}
+.label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;letter-spacing:.02em;text-transform:uppercase}
+.field{margin-bottom:14px}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:4px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--border);color:var(--muted)}
+.title-grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.divider{height:1px;background:var(--border);margin:14px 0}
+.muted{color:var(--muted)}
+.toast-wrap{position:fixed;top:20px;right:20px;display:flex;flex-direction:column;gap:10px;z-index:9999}
+.toast{padding:12px 16px;border-radius:12px;background:rgba(20,25,55,.9);border:1px solid var(--border);box-shadow:var(--shadow);animation:toastIn .3s ease}
+.toast.ok{border-color:rgba(52,211,153,.4)}
+.toast.err{border-color:rgba(248,113,113,.4)}
+@keyframes toastIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+
+/* ============ Splash ============ */
+#splash{
+  position:fixed;inset:0;display:grid;place-items:center;z-index:100;
+  background:
+    radial-gradient(600px 400px at 50% 50%, rgba(124,155,255,.35), transparent 60%),
+    linear-gradient(180deg,#050716,#0b1024);
+  animation:splashOut 0s .001s;
+}
+#splash.gone{opacity:0;pointer-events:none;transition:opacity .6s ease}
+.splash-inner{display:flex;flex-direction:column;align-items:center;gap:26px;text-align:center}
+.logo-atom{
+  width:140px;height:140px;position:relative;
+  animation:floaty 4s ease-in-out infinite;
+}
+.logo-atom .nucleus{
+  position:absolute;inset:44% 44%;width:12%;height:12%;border-radius:50%;
+  background:var(--grad);box-shadow:0 0 30px rgba(94,234,212,.7);
+}
+.logo-atom .orbit{
+  position:absolute;inset:0;border:2px solid rgba(255,255,255,.25);border-radius:50%;
+}
+.logo-atom .orbit:nth-child(2){transform:rotate(60deg) scaleY(.4);animation:spin 3s linear infinite}
+.logo-atom .orbit:nth-child(3){transform:rotate(-60deg) scaleY(.4);animation:spin 4s linear infinite reverse}
+.logo-atom .orbit:nth-child(4){transform:rotate(0deg) scaleY(.4);animation:spin 5s linear infinite}
+.logo-atom .electron{
+  position:absolute;top:calc(50% - 6px);left:-6px;width:12px;height:12px;border-radius:50%;
+  background:#fff;box-shadow:0 0 12px #fff;
+}
+@keyframes spin{to{transform:rotate(360deg) scaleY(.4)}}
+@keyframes floaty{0%,100%{transform:translateY(-4px)}50%{transform:translateY(4px)}}
+.splash-title{font-size:44px;font-weight:800;letter-spacing:-.02em}
+.splash-sub{color:var(--muted);font-size:14px;letter-spacing:.3em;text-transform:uppercase}
+.splash-credit{font-size:16px;margin-top:8px}
+.splash-credit b{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.splash-bar{width:220px;height:4px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
+.splash-bar > span{display:block;height:100%;width:30%;background:var(--grad);animation:loadBar 1.8s ease-in-out infinite}
+@keyframes loadBar{0%{margin-left:-30%}100%{margin-left:100%}}
+
+/* ============ Auth ============ */
+#authView{min-height:100vh;display:grid;grid-template-columns:1.1fr 1fr;gap:0}
+@media (max-width:900px){#authView{grid-template-columns:1fr}}
+.auth-hero{
+  position:relative;overflow:hidden;padding:56px;display:flex;flex-direction:column;justify-content:space-between;
+  background:
+    radial-gradient(500px 350px at 20% 10%, rgba(124,155,255,.35), transparent 60%),
+    radial-gradient(400px 350px at 80% 90%, rgba(244,114,182,.25), transparent 60%),
+    linear-gradient(180deg,#0b1130,#080a20);
+  border-right:1px solid var(--border);
+}
+.auth-hero h1{font-size:44px;line-height:1.05;margin-bottom:14px}
+.auth-hero p{color:var(--muted);max-width:440px;font-size:15px;line-height:1.5}
+.auth-hero .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.auth-hero .chip{padding:6px 12px;border-radius:99px;background:var(--surface);border:1px solid var(--border);font-size:12px;color:var(--muted)}
+.auth-hero .floaters .f{position:absolute;border-radius:20px;filter:blur(1px);opacity:.7;animation:floaty 6s ease-in-out infinite}
+.auth-hero .f1{width:140px;height:140px;top:20%;right:8%;background:linear-gradient(135deg,#5eead4,#7c9bff);border-radius:40% 60% 60% 40%/40% 40% 60% 60%;animation-duration:7s}
+.auth-hero .f2{width:90px;height:90px;bottom:14%;right:22%;background:linear-gradient(135deg,#f472b6,#7c9bff);border-radius:50%;animation-duration:9s}
+.auth-hero .f3{width:60px;height:60px;top:60%;right:40%;background:linear-gradient(135deg,#fbbf24,#f472b6);border-radius:30%;animation-duration:11s}
+.auth-panel{padding:56px;display:flex;align-items:center;justify-content:center}
+.auth-card{width:100%;max-width:440px;padding:32px}
+.tabs{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px;margin-bottom:20px}
+.tabs button{flex:1;padding:10px;border-radius:9px;color:var(--muted);font-weight:600;font-size:13px}
+.tabs button.active{background:var(--grad);color:#0b1024}
+.auth-form{animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.helper{font-size:12px;color:var(--muted);margin-top:4px}
+.link{color:var(--primary);cursor:pointer;font-size:13px}
+.link:hover{text-decoration:underline}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* ============ App shell ============ */
+.shell{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+@media (max-width:900px){.shell{grid-template-columns:1fr}.sidebar{position:fixed;inset:0 30% 0 0;transform:translateX(-100%);transition:transform .3s;z-index:50}.sidebar.open{transform:none}.menu-btn{display:inline-flex !important}}
+.sidebar{
+  background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
+  border-right:1px solid var(--border);padding:22px 16px;display:flex;flex-direction:column;gap:6px;
+}
+.brand{display:flex;align-items:center;gap:10px;padding:6px 8px 16px;border-bottom:1px solid var(--border);margin-bottom:12px}
+.brand .dot{width:32px;height:32px;border-radius:10px;background:var(--grad);box-shadow:0 8px 24px -8px rgba(94,234,212,.6)}
+.brand b{font-size:15px}
+.brand span{display:block;font-size:11px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase}
+.nav-item{
+  display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;color:var(--muted);
+  font-size:14px;font-weight:500;transition:background .2s,color .2s,transform .15s;
+}
+.nav-item:hover{background:var(--surface);color:var(--text)}
+.nav-item.active{background:var(--surface-2);color:var(--text);box-shadow:inset 0 0 0 1px var(--border)}
+.nav-item .ico{width:20px;height:20px;display:grid;place-items:center;opacity:.85}
+.nav-sep{font-size:10px;letter-spacing:.25em;color:var(--muted);text-transform:uppercase;padding:14px 12px 4px}
+.spacer{flex:1}
+.side-user{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;background:var(--surface);border:1px solid var(--border)}
+.side-user .avatar{width:36px;height:36px;border-radius:50%;overflow:hidden;background:var(--grad);flex-shrink:0}
+.side-user .avatar svg,.side-user .avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.side-user .meta{min-width:0}
+.side-user .meta b{display:block;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.side-user .meta span{font-size:11px;color:var(--muted)}
+
+.main{padding:26px 32px;overflow:auto}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;gap:12px}
+.topbar h2{font-size:24px}
+.menu-btn{display:none}
+.grid{display:grid;gap:16px}
+.grid.cards-4{grid-template-columns:repeat(4,1fr)}
+.grid.cards-3{grid-template-columns:repeat(3,1fr)}
+.grid.cards-2{grid-template-columns:repeat(2,1fr)}
+@media (max-width:1100px){.grid.cards-4{grid-template-columns:repeat(2,1fr)}.grid.cards-3{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:640px){.grid.cards-4,.grid.cards-3,.grid.cards-2{grid-template-columns:1fr}}
+.stat{padding:18px;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden}
+.stat .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.15em}
+.stat .v{font-size:28px;font-weight:800}
+.stat .glow{position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;filter:blur(30px);opacity:.35}
+.section-title{display:flex;align-items:center;justify-content:space-between;margin:24px 0 12px}
+.section-title h3{font-size:16px}
+.fact-card{padding:22px;position:relative;overflow:hidden}
+.fact-card .tag{display:inline-flex;padding:4px 10px;border-radius:99px;background:var(--surface);border:1px solid var(--border);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.15em;margin-bottom:12px}
+.fact-card h4{font-size:20px;margin-bottom:8px}
+.fact-card p{color:var(--muted);line-height:1.55}
+
+/* Profile page */
+.profile-hero{padding:28px;display:flex;gap:22px;align-items:center;position:relative;overflow:hidden}
+.profile-hero .avatar-lg{width:96px;height:96px;border-radius:50%;overflow:hidden;background:var(--grad);flex-shrink:0;border:3px solid rgba(255,255,255,.15)}
+.profile-hero .avatar-lg svg,.profile-hero .avatar-lg img{width:100%;height:100%}
+.profile-hero h3{font-size:22px}
+.profile-hero .lvl{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:4px 10px;border-radius:99px;background:var(--grad);color:#0b1024;font-weight:700;margin-top:4px}
+.xp-bar{margin-top:10px;height:8px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;max-width:340px}
+.xp-bar > span{display:block;height:100%;background:var(--grad);width:12%;transition:width .5s}
+
+.avatar-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:8px}
+@media (max-width:640px){.avatar-grid{grid-template-columns:repeat(4,1fr)}}
+.avatar-choice{aspect-ratio:1;border-radius:50%;overflow:hidden;border:2px solid var(--border);cursor:pointer;background:var(--surface);transition:transform .15s,border-color .2s,box-shadow .2s}
+.avatar-choice:hover{transform:scale(1.05)}
+.avatar-choice.selected{border-color:var(--primary);box-shadow:0 0 0 3px rgba(94,234,212,.25)}
+.avatar-choice svg,.avatar-choice img{width:100%;height:100%;display:block}
+
+/* Admin */
+.table{width:100%;border-collapse:collapse;font-size:13px}
+.table th,.table td{padding:12px 14px;text-align:left;border-bottom:1px solid var(--border)}
+.table th{font-size:11px;text-transform:uppercase;letter-spacing:.15em;color:var(--muted);font-weight:600}
+.table tr:hover td{background:rgba(255,255,255,.03)}
+.chip-role{display:inline-flex;padding:2px 8px;border-radius:99px;font-size:11px;background:rgba(94,234,212,.15);color:var(--primary);border:1px solid rgba(94,234,212,.3)}
+
+/* Modal */
+.modal-back{position:fixed;inset:0;background:rgba(3,5,20,.7);backdrop-filter:blur(6px);display:grid;place-items:center;z-index:200;animation:fadeIn .2s ease;padding:20px}
+.modal{max-width:520px;width:100%;padding:26px;animation:pop .25s ease}
+@keyframes pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+
+/* Placeholder module */
+.placeholder{padding:48px;text-align:center}
+.placeholder .ico-big{width:64px;height:64px;margin:0 auto 14px;border-radius:20px;background:var(--grad);display:grid;place-items:center;color:#0b1024;font-weight:800;font-size:24px;box-shadow:0 20px 40px -18px rgba(94,234,212,.6)}
+.placeholder h3{margin-bottom:6px}
+.placeholder p{color:var(--muted);max-width:420px;margin:0 auto}
+</style>
+</head>
+<body>
+
+<!-- ============ SPLASH ============ -->
+<div id="splash">
+  <div class="splash-inner">
+    <div class="logo-atom" aria-hidden="true">
+      <div class="orbit"></div>
+      <div class="orbit"><div class="electron"></div></div>
+      <div class="orbit"><div class="electron"></div></div>
+      <div class="orbit"><div class="electron"></div></div>
+      <div class="nucleus"></div>
+    </div>
+    <div>
+      <div class="splash-sub">Welcome to</div>
+      <div class="splash-title title-grad">Chemistry Practice</div>
+    </div>
+    <div class="splash-credit">Created by <b>Manuel ExE</b></div>
+    <div class="splash-bar"><span></span></div>
+  </div>
+</div>
+
+<!-- ============ AUTH ============ -->
+<section id="authView" class="hidden">
+  <div class="auth-hero">
+    <div>
+      <span class="badge">⚗️ Offline Learning App</span>
+      <h1 style="margin-top:18px">Master Chemistry<br/><span class="title-grad">one reaction at a time.</span></h1>
+      <p>Notes, flashcards, quizzes, CBT exams and a periodic table — all in one beautifully crafted offline app.</p>
+      <div class="chips">
+        <span class="chip">🎯 Practice</span>
+        <span class="chip">🧠 Quizzes</span>
+        <span class="chip">🏆 Leaderboard</span>
+        <span class="chip">🎁 Rewards</span>
+        <span class="chip">📈 Analytics</span>
+      </div>
+    </div>
+    <div class="muted" style="font-size:12px">© Chemistry Practice · Created by Manuel ExE</div>
+    <div class="floaters" aria-hidden="true">
+      <div class="f f1"></div><div class="f f2"></div><div class="f f3"></div>
+    </div>
+  </div>
+  <div class="auth-panel">
+    <div class="card auth-card">
+      <div class="tabs" role="tablist">
+        <button id="tabLogin" class="active" onclick="switchTab('login')">Login</button>
+        <button id="tabSignup" onclick="switchTab('signup')">Create Account</button>
+      </div>
+
+      <!-- LOGIN -->
+      <form id="loginForm" class="auth-form" onsubmit="return doLogin(event)">
+        <h3 style="margin-bottom:6px">Welcome back 👋</h3>
+        <p class="muted" style="font-size:13px;margin-bottom:18px">Sign in to continue your Chemistry journey.</p>
+        <div class="field">
+          <label class="label">Username</label>
+          <input class="input" name="username" required autocomplete="username" />
+        </div>
+        <div class="field">
+          <label class="label">Password</label>
+          <input class="input" type="password" name="password" required autocomplete="current-password" />
+          <div class="helper"><span class="link" onclick="showHint()">Forgot password? Show hint</span></div>
+        </div>
+        <button class="btn primary" style="width:100%">Log in →</button>
+        <div class="divider"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="muted" style="font-size:12px">Administrator?</span>
+          <span class="link" onclick="openAdminLogin()">Admin login</span>
+        </div>
+      </form>
+
+      <!-- SIGNUP -->
+      <form id="signupForm" class="auth-form hidden" onsubmit="return doSignup(event)">
+        <h3 style="margin-bottom:6px">Create your account</h3>
+        <p class="muted" style="font-size:13px;margin-bottom:18px">Join and start earning XP today.</p>
+        <div class="two-col">
+          <div class="field">
+            <label class="label">Username</label>
+            <input class="input" name="username" required minlength="3" />
+          </div>
+          <div class="field">
+            <label class="label">Full name</label>
+            <input class="input" name="fullName" required />
+          </div>
+        </div>
+        <div class="two-col">
+          <div class="field">
+            <label class="label">Age</label>
+            <input class="input" type="number" name="age" min="5" max="120" required />
+          </div>
+          <div class="field">
+            <label class="label">School</label>
+            <input class="input" name="school" placeholder="Optional" />
+          </div>
+        </div>
+        <div class="field">
+          <label class="label">Password</label>
+          <input class="input" type="password" name="password" required minlength="4" />
+        </div>
+        <div class="field">
+          <label class="label">Password hint</label>
+          <input class="input" name="hint" placeholder="Something only you would remember" required />
+        </div>
+        <button class="btn primary" style="width:100%">Create account</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ============ APP SHELL ============ -->
+<section id="appView" class="hidden">
+  <div class="shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="dot"></div>
+        <div><b>Chemistry Practice</b><span>By Manuel ExE</span></div>
+      </div>
+
+      <button class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')"><span class="ico">🏠</span> Dashboard</button>
+      <button class="nav-item" data-page="profile" onclick="navigate('profile')"><span class="ico">👤</span> Profile</button>
+
+      <div class="nav-sep">Learn</div>
+      <button class="nav-item" data-page="notes" onclick="navigate('notes')"><span class="ico">📘</span> Topic Notes</button>
+      <button class="nav-item" data-page="flashcards" onclick="navigate('flashcards')"><span class="ico">🃏</span> Flashcards</button>
+      <button class="nav-item" data-page="practice" onclick="navigate('practice')"><span class="ico">✏️</span> Practice</button>
+      <button class="nav-item" data-page="quiz" onclick="navigate('quiz')"><span class="ico">🧠</span> Quizzes</button>
+      <button class="nav-item" data-page="cbt" onclick="navigate('cbt')"><span class="ico">📝</span> CBT Exams</button>
+
+      <div class="nav-sep">Resources</div>
+      <button class="nav-item" data-page="periodic" onclick="navigate('periodic')"><span class="ico">⚛️</span> Periodic Table</button>
+      <button class="nav-item" data-page="formulae" onclick="navigate('formulae')"><span class="ico">🧪</span> Formulae</button>
+      <button class="nav-item" data-page="dictionary" onclick="navigate('dictionary')"><span class="ico">📚</span> Dictionary</button>
+      <button class="nav-item" data-page="calc" onclick="navigate('calc')"><span class="ico">🧮</span> Calculator</button>
+
+      <div class="nav-sep">Progress</div>
+      <button class="nav-item" data-page="mastery" onclick="navigate('mastery')"><span class="ico">🎯</span> Mastery</button>
+      <button class="nav-item" data-page="leaderboard" onclick="navigate('leaderboard')"><span class="ico">🏆</span> Leaderboard</button>
+      <button class="nav-item" data-page="ask" onclick="navigate('ask')"><span class="ico">💬</span> Ask a Question</button>
+
+      <div class="spacer"></div>
+      <div class="side-user" id="sideUser"></div>
+      <button class="btn small ghost" style="margin-top:8px" onclick="logout()">↩ Log out</button>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="btn small menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+          <h2 id="pageTitle">Dashboard</h2>
+        </div>
+        <div class="row">
+          <span class="badge" id="dateBadge"></span>
+          <span class="badge" id="xpBadge">✨ 0 XP</span>
+        </div>
+      </div>
+
+      <div id="page"></div>
+    </main>
+  </div>
+</section>
+
+<div class="toast-wrap" id="toasts"></div>
+
+<script>
+/* ============================================================
+   Chemistry Practice — Phase 1 Core Shell
+   Offline HTML app. Data persists in localStorage.
+   ============================================================ */
+
+const LS_USERS   = "cp_users";
+const LS_SESSION = "cp_session";
+const LS_ADMIN   = "cp_admin_pw";
+const LS_LOGS    = "cp_logs";
+
+/* ---------- Utils ---------- */
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
+const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+function toast(msg, kind="") {
+  const t = document.createElement("div");
+  t.className = "toast " + kind;
+  t.textContent = msg;
+  $("#toasts").appendChild(t);
+  setTimeout(()=>{ t.style.opacity=0; t.style.transform="translateY(-8px)"; t.style.transition=".3s"; }, 2200);
+  setTimeout(()=>t.remove(), 2700);
+}
+function todayKey(){ const d=new Date(); return d.getFullYear()+"-"+d.getMonth()+"-"+d.getDate(); }
+
+/* ---------- 12 built-in SVG avatars ---------- */
+const AVATAR_COLORS = [
+  ["#5eead4","#7c9bff"],["#f472b6","#7c9bff"],["#fbbf24","#f472b6"],
+  ["#34d399","#5eead4"],["#a78bfa","#f472b6"],["#60a5fa","#34d399"],
+  ["#f87171","#fbbf24"],["#22d3ee","#a78bfa"],["#f472b6","#fbbf24"],
+  ["#818cf8","#22d3ee"],["#fb7185","#f472b6"],["#4ade80","#22d3ee"]
+];
+const AVATAR_ICONS = ["⚗️","🧪","⚛️","🔬","🧫","💧","🔥","🌡️","💎","🧬","🌱","✨"];
+function avatarSVG(i){
+  const [c1,c2] = AVATAR_COLORS[i % 12];
+  const icon = AVATAR_ICONS[i % 12];
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="g${i}" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs>
+    <rect width="100" height="100" fill="url(#g${i})"/>
+    <text x="50" y="62" font-size="46" text-anchor="middle" font-family="Apple Color Emoji, Segoe UI Emoji, sans-serif">${icon}</text>
+  </svg>`;
+}
+function renderAvatar(user){
+  if(user?.avatarData) return `<img src="${user.avatarData}" alt="avatar"/>`;
+  return avatarSVG(user?.avatarIndex ?? 0);
+}
+
+/* ---------- Chemistry facts (placeholder — one per day) ---------- */
+const DAILY_FACTS = [
+  "The only letter not on the periodic table is J.",
+  "Hydrogen is the most abundant element in the universe — about 75% of normal matter.",
+  "Water expands when it freezes — one of very few substances that do.",
+  "Diamond and graphite are both pure carbon, but arranged differently.",
+  "Helium is the only element discovered in space (the Sun) before being found on Earth.",
+  "Human bones are stronger than steel by weight — thanks to calcium phosphate.",
+  "A single teaspoon of a neutron star would weigh about 6 billion tons.",
+  "Gold is so soft you can hammer a single gram into a sheet 1 m² wide.",
+  "Room-temperature liquids at 25°C among elements: only bromine and mercury.",
+  "Oxygen is actually blue in liquid and solid form."
+];
+const FUN_FACTS = [
+  "Bananas are slightly radioactive because they contain potassium-40.",
+  "Glass is technically a very slow-flowing liquid… actually no, it's a solid. Myth busted.",
+  "The smell of rain (petrichor) is caused by a compound called geosmin.",
+  "Astatine is so rare that less than 1 gram exists on Earth at any time.",
+  "Chlorophyll is what makes plants green — and it's chemically similar to hemoglobin.",
+  "You can boil water at room temperature — just lower the pressure enough."
+];
+function factOfTheDay(){
+  const key = todayKey();
+  const seed = key.split("-").reduce((a,b)=>a+parseInt(b),0);
+  return DAILY_FACTS[seed % DAILY_FACTS.length];
+}
+function randomFunFact(){ return FUN_FACTS[Math.floor(Math.random()*FUN_FACTS.length)]; }
+
+/* ---------- Pre-authored Q&A bank (Phase 1 placeholder) ---------- */
+const QA_BANK = [
+  { q:"What is an atom?", a:"An atom is the smallest unit of an element that retains the chemical properties of that element. It consists of a nucleus (protons + neutrons) surrounded by electrons in orbitals.", topic:"Atomic Structure" },
+  { q:"Define a mole.", a:"A mole is the SI unit for amount of substance, equal to 6.022 × 10²³ particles (Avogadro's number).", topic:"Stoichiometry" },
+  { q:"What is oxidation?", a:"Oxidation is the loss of electrons by a substance during a chemical reaction. It is always accompanied by reduction of another species.", topic:"Redox Reactions" },
+  { q:"State the ideal gas law.", a:"PV = nRT, where P = pressure, V = volume, n = moles, R = universal gas constant (8.314 J/mol·K), and T = temperature in Kelvin.", topic:"Gas Laws" },
+  { q:"What is pH?", a:"pH is the negative logarithm (base 10) of the hydrogen ion concentration: pH = -log[H⁺]. Values below 7 are acidic, above 7 basic, and 7 is neutral.", topic:"Acids and Bases" },
+  { q:"What is a covalent bond?", a:"A covalent bond is formed when two atoms share one or more pairs of electrons, usually between non-metals.", topic:"Chemical Bonding" }
+];
+
+/* ---------- User / auth ---------- */
+function getUsers(){ return load(LS_USERS, []); }
+function saveUsers(u){ save(LS_USERS, u); }
+function getSession(){ return load(LS_SESSION, null); }
+function setSession(s){ save(LS_SESSION, s); }
+function currentUser(){
+  const s = getSession();
+  if(!s) return null;
+  return getUsers().find(u => u.username === s.username) || null;
+}
+function updateCurrentUser(patch){
+  const users = getUsers();
+  const idx = users.findIndex(u=>u.username===getSession().username);
+  if(idx<0) return;
+  users[idx] = { ...users[idx], ...patch };
+  saveUsers(users);
+}
+function logEvent(username, type, meta){
+  const logs = load(LS_LOGS, []);
+  logs.push({ username, type, meta:meta||null, at:Date.now() });
+  save(LS_LOGS, logs);
+}
+
+/* ---------- Splash ---------- */
+window.addEventListener("load", () => {
+  setTimeout(()=>{
+    $("#splash").classList.add("gone");
+    setTimeout(()=>{ $("#splash").remove(); showAuthOrApp(); }, 600);
+  }, 2200);
+});
+
+function showAuthOrApp(){
+  if(getSession()){
+    $("#authView").classList.add("hidden");
+    $("#appView").classList.remove("hidden");
+    initApp();
+  } else {
+    $("#authView").classList.remove("hidden");
+    $("#appView").classList.add("hidden");
+  }
+}
+
+/* ---------- Auth tab switching ---------- */
+function switchTab(which){
+  $("#tabLogin").classList.toggle("active", which==="login");
+  $("#tabSignup").classList.toggle("active", which==="signup");
+  $("#loginForm").classList.toggle("hidden", which!=="login");
+  $("#signupForm").classList.toggle("hidden", which!=="signup");
+}
+function showHint(){
+  const u = prompt("Enter your username to view your password hint:");
+  if(!u) return;
+  const user = getUsers().find(x=>x.username.toLowerCase()===u.toLowerCase());
+  if(!user){ toast("User not found", "err"); return; }
+  alert("Hint for "+user.username+":\n\n"+ (user.hint || "(no hint set)"));
+}
+
+/* ---------- Signup / Login ---------- */
+function doSignup(e){
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const data = Object.fromEntries(f.entries());
+  const users = getUsers();
+  if(users.some(u => u.username.toLowerCase() === data.username.toLowerCase())){
+    toast("Username already taken", "err"); return false;
+  }
+  const newUser = {
+    username: data.username.trim(),
+    fullName: data.fullName.trim(),
+    age: Number(data.age),
+    school: data.school?.trim() || "",
+    password: data.password,
+    hint: data.hint,
+    bio: "",
+    avatarIndex: Math.floor(Math.random()*12),
+    avatarData: null,
+    xp: 0,
+    level: 1,
+    createdAt: Date.now(),
+    completedTopics: [],
+    coins: 0,
+    gems: 0
+  };
+  users.push(newUser);
+  saveUsers(users);
+  setSession({ username: newUser.username });
+  logEvent(newUser.username, "signup");
+  logEvent(newUser.username, "login");
+  toast("Account created — welcome!", "ok");
+  showAuthOrApp();
+  return false;
+}
+function doLogin(e){
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const { username, password } = Object.fromEntries(f.entries());
+  const user = getUsers().find(u => u.username.toLowerCase() === username.toLowerCase());
+  if(!user || user.password !== password){
+    toast("Invalid username or password", "err"); return false;
+  }
+  setSession({ username: user.username });
+  logEvent(user.username, "login");
+  toast("Welcome back, "+user.username+"!", "ok");
+  showAuthOrApp();
+  return false;
+}
+function logout(){
+  const s = getSession();
+  if(s) logEvent(s.username, "logout");
+  localStorage.removeItem(LS_SESSION);
+  location.reload();
+}
+
+/* ---------- Admin login ---------- */
+function openAdminLogin(){
+  const pw = prompt("Administrator password:");
+  if(pw === null) return;
+  const stored = localStorage.getItem(LS_ADMIN) || "123456";
+  if(pw !== stored){ toast("Incorrect admin password", "err"); return; }
+  setSession({ username:"__admin__", admin:true });
+  showAuthOrApp();
+}
+
+/* ---------- App init ---------- */
+function initApp(){
+  $("#dateBadge").textContent = new Date().toLocaleDateString(undefined, { weekday:"short", month:"short", day:"numeric" });
+  const s = getSession();
+  if(s?.admin){ renderAdminShell(); return; }
+  const user = currentUser();
+  if(!user){ logout(); return; }
+  $("#sideUser").innerHTML = `
+    <div class="avatar">${renderAvatar(user)}</div>
+    <div class="meta"><b>${user.fullName}</b><span>@${user.username} · Lv ${user.level}</span></div>
+  `;
+  $("#xpBadge").textContent = "✨ " + user.xp + " XP · Lv " + user.level;
+  navigate("dashboard");
+}
+
+/* ---------- Router ---------- */
+const PAGES = {
+  dashboard: renderDashboard,
+  profile: renderProfile,
+  notes: () => placeholder("📘","Topic Notes","Structured Chemistry topic notes will appear here once your syllabus is added."),
+  flashcards: () => placeholder("🃏","Flashcards","Flip-through flashcards with spaced repetition are on the way."),
+  practice: () => placeholder("✏️","Practice Questions","Practice sets with 6 difficulty tiers — Easy to Master — coming next phase."),
+  quiz: () => placeholder("🧠","Quizzes","Adaptive quizzes will pull from your completed topics."),
+  cbt: () => placeholder("📝","CBT Exams","Real-time CBT with anti-cheat monitoring (tab switch / minimize / inactivity) coming next phase."),
+  periodic: () => placeholder("⚛️","Periodic Table","Interactive periodic table with unique element icons — next phase."),
+  formulae: () => placeholder("🧪","Chemistry Formulae","Searchable formulae reference — coming soon."),
+  dictionary: () => placeholder("📚","Chemistry Dictionary","Definitions and glossary — coming soon."),
+  calc: () => placeholder("🧮","Chemistry Calculator","Molar mass, stoichiometry, dilution and gas-law calculators — coming soon."),
+  mastery: () => placeholder("🎯","Mastery","Mastery tracking and personalised recommendations — coming soon."),
+  leaderboard: renderLeaderboard,
+  ask: renderAsk
+};
+const TITLES = {
+  dashboard:"Dashboard", profile:"My Profile", notes:"Topic Notes", flashcards:"Flashcards",
+  practice:"Practice", quiz:"Quizzes", cbt:"CBT Exams", periodic:"Periodic Table",
+  formulae:"Formulae", dictionary:"Dictionary", calc:"Calculator",
+  mastery:"Mastery", leaderboard:"Leaderboard", ask:"Ask a Question"
+};
+function navigate(page){
+  $$(".nav-item").forEach(n => n.classList.toggle("active", n.dataset.page===page));
+  $("#pageTitle").textContent = TITLES[page] || "";
+  const fn = PAGES[page] || PAGES.dashboard;
+  $("#page").innerHTML = "";
+  fn();
+  document.getElementById("sidebar").classList.remove("open");
+}
+
+/* ---------- Dashboard ---------- */
+function renderDashboard(){
+  const user = currentUser();
+  const users = getUsers();
+  const ranked = [...users].sort((a,b)=>b.xp-a.xp);
+  const rank = ranked.findIndex(u=>u.username===user.username)+1;
+  const nextLvl = user.level * 100;
+  const pct = Math.min(100, (user.xp % 100));
+  $("#page").innerHTML = `
+    <div class="grid cards-4">
+      <div class="card stat"><div class="glow" style="background:#5eead4"></div><span class="k">Level</span><span class="v">${user.level}</span></div>
+      <div class="card stat"><div class="glow" style="background:#7c9bff"></div><span class="k">Total XP</span><span class="v">${user.xp}</span></div>
+      <div class="card stat"><div class="glow" style="background:#f472b6"></div><span class="k">Rank</span><span class="v">#${rank}</span></div>
+      <div class="card stat"><div class="glow" style="background:#fbbf24"></div><span class="k">Topics Done</span><span class="v">${user.completedTopics.length}</span></div>
+    </div>
+
+    <div class="section-title"><h3>Today's Chemistry Fact</h3><span class="badge">${new Date().toLocaleDateString()}</span></div>
+    <div class="grid cards-2">
+      <div class="card fact-card">
+        <span class="tag">Daily Fact</span>
+        <h4>Did you know?</h4>
+        <p>${factOfTheDay()}</p>
+      </div>
+      <div class="card fact-card">
+        <span class="tag">Fun Fact</span>
+        <h4>Chemistry is wild</h4>
+        <p id="funFact">${randomFunFact()}</p>
+        <button class="btn small" style="margin-top:14px" onclick="document.getElementById('funFact').textContent=randomFunFact()">🎲 New fact</button>
+      </div>
+    </div>
+
+    <div class="section-title"><h3>Quick actions</h3></div>
+    <div class="grid cards-4">
+      ${quickAction("notes","📘","Read Notes")}
+      ${quickAction("flashcards","🃏","Flashcards")}
+      ${quickAction("quiz","🧠","Take a Quiz")}
+      ${quickAction("periodic","⚛️","Periodic Table")}
+    </div>
+
+    <div class="section-title"><h3>Progress</h3></div>
+    <div class="card" style="padding:22px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span class="muted" style="font-size:13px">Level ${user.level} → ${user.level+1}</span>
+        <span class="muted" style="font-size:13px">${pct}/100 XP</span>
+      </div>
+      <div class="xp-bar"><span style="width:${pct}%"></span></div>
+    </div>
+  `;
+}
+function quickAction(page, icon, label){
+  return `<button class="card stat" style="text-align:left;cursor:pointer" onclick="navigate('${page}')">
+    <span class="k">Jump to</span>
+    <span style="display:flex;align-items:center;gap:10px;font-size:18px;font-weight:700">${icon} ${label}</span>
+  </button>`;
+}
+
+/* ---------- Profile ---------- */
+function renderProfile(){
+  const user = currentUser();
+  const pct = Math.min(100, user.xp % 100);
+  const avatarsHtml = Array.from({length:12}, (_,i)=>`
+    <div class="avatar-choice ${!user.avatarData && user.avatarIndex===i?'selected':''}" onclick="pickAvatar(${i})">${avatarSVG(i)}</div>
+  `).join("");
+  $("#page").innerHTML = `
+    <div class="card profile-hero">
+      <div class="avatar-lg" id="avatarLg">${renderAvatar(user)}</div>
+      <div style="flex:1;min-width:0">
+        <h3>${user.fullName}</h3>
+        <div class="muted" style="font-size:13px">@${user.username} · Age ${user.age}${user.school?" · "+user.school:""}</div>
+        <div class="lvl">Level ${user.level} · ${user.xp} XP</div>
+        <div class="xp-bar"><span style="width:${pct}%"></span></div>
+      </div>
+    </div>
+
+    <div class="grid cards-2" style="margin-top:16px">
+      <div class="card" style="padding:22px">
+        <h3 style="margin-bottom:12px">Edit profile</h3>
+        <form onsubmit="return saveProfile(event)">
+          <div class="two-col">
+            <div class="field"><label class="label">Username</label><input class="input" name="username" value="${user.username}" required /></div>
+            <div class="field"><label class="label">Full name</label><input class="input" name="fullName" value="${user.fullName}" required /></div>
+          </div>
+          <div class="two-col">
+            <div class="field"><label class="label">Age</label><input class="input" type="number" name="age" value="${user.age}" required /></div>
+            <div class="field"><label class="label">School</label><input class="input" name="school" value="${user.school||''}" /></div>
+          </div>
+          <div class="field">
+            <label class="label">Biography</label>
+            <textarea class="input" name="bio" rows="3" placeholder="Tell us about yourself…">${user.bio||''}</textarea>
+          </div>
+          <div class="field">
+            <label class="label">New password (optional)</label>
+            <input class="input" type="password" name="password" placeholder="Leave blank to keep current" />
+          </div>
+          <div class="field">
+            <label class="label">Password hint</label>
+            <input class="input" name="hint" value="${user.hint||''}" />
+          </div>
+          <button class="btn primary">Save changes</button>
+        </form>
+      </div>
+
+      <div class="card" style="padding:22px">
+        <h3 style="margin-bottom:6px">Profile picture</h3>
+        <p class="muted" style="font-size:13px;margin-bottom:14px">Choose from 12 built-in avatars or upload your own PNG/JPG.</p>
+        <div class="avatar-grid">${avatarsHtml}</div>
+        <div class="divider"></div>
+        <label class="btn small" style="cursor:pointer;display:inline-flex">
+          📤 Upload PNG/JPG
+          <input type="file" accept="image/png,image/jpeg" hidden onchange="uploadAvatar(event)" />
+        </label>
+        ${user.avatarData?`<button class="btn small ghost" onclick="clearUpload()">Remove uploaded photo</button>`:""}
+      </div>
+    </div>
+  `;
+}
+function pickAvatar(i){
+  updateCurrentUser({ avatarIndex:i, avatarData:null });
+  renderProfile(); initApp();
+  toast("Avatar updated", "ok");
+}
+function uploadAvatar(e){
+  const file = e.target.files[0]; if(!file) return;
+  if(file.size > 2*1024*1024){ toast("Image too large (max 2 MB)", "err"); return; }
+  const r = new FileReader();
+  r.onload = () => { updateCurrentUser({ avatarData:r.result }); renderProfile(); initApp(); toast("Photo uploaded", "ok"); };
+  r.readAsDataURL(file);
+}
+function clearUpload(){ updateCurrentUser({ avatarData:null }); renderProfile(); initApp(); }
+function saveProfile(e){
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.target).entries());
+  const user = currentUser();
+  if(data.username.toLowerCase() !== user.username.toLowerCase() &&
+     getUsers().some(u=>u.username.toLowerCase()===data.username.toLowerCase())){
+    toast("Username taken", "err"); return false;
+  }
+  // if password provided, update; otherwise keep
+  const patch = {
+    username:data.username.trim(), fullName:data.fullName.trim(),
+    age:Number(data.age), school:data.school||"", bio:data.bio||"", hint:data.hint||user.hint
+  };
+  if(data.password) patch.password = data.password;
+  updateCurrentUser(patch);
+  setSession({ username: patch.username });
+  toast("Profile saved", "ok");
+  initApp(); navigate("profile");
+  return false;
+}
+
+/* ---------- Leaderboard ---------- */
+function renderLeaderboard(){
+  const me = currentUser();
+  const users = [...getUsers()].sort((a,b)=>b.xp-a.xp).slice(0,20);
+  const rows = users.map((u,i)=>`
+    <tr${u.username===me.username?' style="background:rgba(94,234,212,.08)"':''}>
+      <td><b>#${i+1}</b></td>
+      <td><div style="display:flex;align-items:center;gap:10px"><div style="width:28px;height:28px;border-radius:50%;overflow:hidden">${renderAvatar(u)}</div>${u.fullName}</div></td>
+      <td>@${u.username}</td>
+      <td>Lv ${u.level}</td>
+      <td>${u.xp} XP</td>
+      <td>${i<20?'<span class="chip-role">VIP</span>':''}</td>
+    </tr>
+  `).join("");
+  $("#page").innerHTML = `
+    <div class="card" style="padding:8px">
+      <table class="table">
+        <thead><tr><th>Rank</th><th>Name</th><th>User</th><th>Level</th><th>XP</th><th>Perk</th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="6" style="text-align:center;padding:30px" class="muted">No players yet.</td></tr>'}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+/* ---------- Ask a Question (pre-authored, offline) ---------- */
+function renderAsk(){
+  $("#page").innerHTML = `
+    <div class="card" style="padding:22px">
+      <h3 style="margin-bottom:6px">Ask a Chemistry question</h3>
+      <p class="muted" style="font-size:13px;margin-bottom:14px">Search our offline Q&A library. Type keywords like "atom", "mole", "pH"…</p>
+      <input class="input" id="askInput" placeholder="e.g. what is oxidation" oninput="doAsk()"/>
+    </div>
+    <div id="askResults" style="margin-top:16px;display:grid;gap:12px"></div>
+  `;
+  doAsk();
+}
+function doAsk(){
+  const q = ($("#askInput")?.value || "").toLowerCase().trim();
+  const results = !q ? QA_BANK : QA_BANK.filter(x =>
+    x.q.toLowerCase().includes(q) || x.a.toLowerCase().includes(q) || x.topic.toLowerCase().includes(q)
+  );
+  $("#askResults").innerHTML = results.length ? results.map(r=>`
+    <div class="card" style="padding:18px">
+      <span class="badge" style="margin-bottom:8px">${r.topic}</span>
+      <h4 style="margin:8px 0 6px">${r.q}</h4>
+      <p class="muted" style="line-height:1.55">${r.a}</p>
+    </div>
+  `).join("") : `<div class="card placeholder"><div class="ico-big">🤔</div><h3>No match yet</h3><p>This is the Phase 1 offline Q&A library — more content will be added as your syllabus is loaded.</p></div>`;
+}
+
+/* ---------- Placeholder module page ---------- */
+function placeholder(icon, title, desc){
+  $("#page").innerHTML = `
+    <div class="card placeholder">
+      <div class="ico-big">${icon}</div>
+      <h3>${title}</h3>
+      <p>${desc}</p>
+      <div style="margin-top:18px"><span class="badge">Phase 2 · Coming next</span></div>
+    </div>
+  `;
+}
+
+/* ---------- Admin shell ---------- */
+function renderAdminShell(){
+  document.body.innerHTML = `
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand"><div class="dot"></div><div><b>Admin Console</b><span>Chemistry Practice</span></div></div>
+        <button class="nav-item active" onclick="renderAdminUsers()"><span class="ico">👥</span> Students</button>
+        <button class="nav-item" onclick="renderAdminLogs()"><span class="ico">📜</span> Activity Logs</button>
+        <button class="nav-item" onclick="renderAdminSettings()"><span class="ico">⚙️</span> Settings</button>
+        <div class="spacer"></div>
+        <button class="btn small ghost" onclick="logout()">↩ Log out</button>
+      </aside>
+      <main class="main">
+        <div class="topbar"><h2 id="pageTitle">Students</h2><span class="badge">🛡 Admin mode</span></div>
+        <div id="page"></div>
+      </main>
+    </div>
+    <div class="toast-wrap" id="toasts"></div>
+  `;
+  renderAdminUsers();
+}
+function renderAdminUsers(){
+  $("#pageTitle").textContent = "Students";
+  const users = getUsers();
+  const logs = load(LS_LOGS, []);
+  const lastEvent = (name, type) => {
+    const evts = logs.filter(l=>l.username===name && l.type===type);
+    return evts.length ? new Date(evts[evts.length-1].at).toLocaleString() : "—";
+  };
+  $("#page").innerHTML = `
+    <div class="card" style="padding:8px">
+      <table class="table">
+        <thead><tr><th>User</th><th>Name</th><th>Age</th><th>Password</th><th>Level</th><th>XP</th><th>Last login</th><th>Last logout</th></tr></thead>
+        <tbody>${users.map(u=>`
+          <tr>
+            <td>@${u.username}</td><td>${u.fullName}</td><td>${u.age}</td>
+            <td><code style="font-size:12px">${u.password}</code></td>
+            <td>Lv ${u.level}</td><td>${u.xp}</td>
+            <td>${lastEvent(u.username,"login")}</td>
+            <td>${lastEvent(u.username,"logout")}</td>
+          </tr>`).join("") || '<tr><td colspan="8" style="text-align:center;padding:30px" class="muted">No students yet.</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+function renderAdminLogs(){
+  $("#pageTitle").textContent = "Activity Logs";
+  const logs = load(LS_LOGS, []).slice().reverse();
+  $("#page").innerHTML = `
+    <div class="card" style="padding:8px">
+      <table class="table">
+        <thead><tr><th>When</th><th>User</th><th>Event</th></tr></thead>
+        <tbody>${logs.map(l=>`<tr><td>${new Date(l.at).toLocaleString()}</td><td>@${l.username}</td><td>${l.type}</td></tr>`).join("") || '<tr><td colspan="3" style="text-align:center;padding:30px" class="muted">No activity yet.</td></tr>'}</tbody>
+      </table>
+    </div>
+  `;
+}
+function renderAdminSettings(){
+  $("#pageTitle").textContent = "Settings";
+  $("#page").innerHTML = `
+    <div class="card" style="padding:22px;max-width:520px">
+      <h3 style="margin-bottom:12px">Change admin password</h3>
+      <form onsubmit="return changeAdminPw(event)">
+        <div class="field"><label class="label">Current password</label><input class="input" type="password" name="current" required /></div>
+        <div class="field"><label class="label">New password</label><input class="input" type="password" name="next" minlength="4" required /></div>
+        <button class="btn primary">Update password</button>
+      </form>
+      <div class="divider"></div>
+      <p class="muted" style="font-size:13px">Default admin password is <code>123456</code>. Change it as soon as possible.</p>
+    </div>
+    <div class="card" style="padding:22px;max-width:520px;margin-top:16px">
+      <h3 style="margin-bottom:12px">Data import / export</h3>
+      <div class="row">
+        <button class="btn small" onclick="exportData()">⬇ Export all data (JSON)</button>
+        <label class="btn small" style="cursor:pointer">⬆ Import data
+          <input type="file" accept="application/json" hidden onchange="importData(event)"/>
+        </label>
+      </div>
+    </div>
+  `;
+}
+function changeAdminPw(e){
+  e.preventDefault();
+  const f = new FormData(e.target); const { current, next } = Object.fromEntries(f.entries());
+  const stored = localStorage.getItem(LS_ADMIN) || "123456";
+  if(current !== stored){ toast("Current password wrong", "err"); return false; }
+  localStorage.setItem(LS_ADMIN, next);
+  toast("Admin password updated", "ok");
+  return false;
+}
+function exportData(){
+  const data = { users:getUsers(), logs:load(LS_LOGS,[]), adminPw: localStorage.getItem(LS_ADMIN)||"123456" };
+  const blob = new Blob([JSON.stringify(data,null,2)], { type:"application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href=url; a.download="chemistry-practice-backup.json"; a.click();
+  URL.revokeObjectURL(url); toast("Backup exported", "ok");
+}
+function importData(e){
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const data = JSON.parse(r.result);
+      if(data.users) save(LS_USERS, data.users);
+      if(data.logs) save(LS_LOGS, data.logs);
+      if(data.adminPw) localStorage.setItem(LS_ADMIN, data.adminPw);
+      toast("Data imported", "ok"); renderAdminUsers();
+    } catch { toast("Invalid file", "err"); }
+  };
+  r.readAsText(f);
+}
+
+/* ============================================================
+   ============  PHASE 2 — LEARNING CORE  =====================
+   Notes · Flashcards · Practice · Quiz · CBT · Periodic Table
+   Formulae · Dictionary · Calculator · Mastery
+   Fully offline. All data local. Content curated from
+   standard IUPAC / secondary-school chemistry references.
+============================================================ */
+
+/* ---------- Phase-2 styles (injected) ---------- */
+document.head.insertAdjacentHTML("beforeend", `<style>
+.p2-split{display:grid;grid-template-columns:260px 1fr;gap:16px}
+@media(max-width:800px){.p2-split{grid-template-columns:1fr}}
+.p2-list{display:flex;flex-direction:column;gap:6px;max-height:70vh;overflow:auto;padding:8px}
+.p2-list button{text-align:left;padding:10px 12px;border-radius:10px;border:1px solid transparent;background:transparent;color:var(--text)}
+.p2-list button:hover{background:var(--surface)}
+.p2-list button.active{background:var(--surface-2);border-color:var(--border)}
+.p2-reader{padding:24px;line-height:1.7}
+.p2-reader h3{margin-bottom:8px}
+.p2-reader h4{margin:18px 0 6px;color:var(--primary)}
+.p2-reader ul{padding-left:20px;color:var(--muted)}
+.p2-reader li{margin:4px 0}
+.p2-reader code{background:var(--surface);padding:2px 6px;border-radius:6px;font-size:13px}
+
+/* Flashcards */
+.fc-stage{display:flex;flex-direction:column;align-items:center;gap:14px;padding:24px}
+.fc-card{width:min(560px,100%);height:280px;perspective:1200px;cursor:pointer}
+.fc-inner{position:relative;width:100%;height:100%;transition:transform .6s cubic-bezier(.4,.2,.2,1);transform-style:preserve-3d}
+.fc-card.flipped .fc-inner{transform:rotateY(180deg)}
+.fc-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:20px;padding:28px;display:grid;place-items:center;text-align:center;font-size:18px;background:linear-gradient(160deg,rgba(255,255,255,.09),rgba(255,255,255,.03));border:1px solid var(--border);box-shadow:var(--shadow)}
+.fc-face.back{transform:rotateY(180deg);background:linear-gradient(160deg,rgba(94,234,212,.12),rgba(124,155,255,.08))}
+.fc-face small{position:absolute;top:14px;left:18px;color:var(--muted);font-size:11px;letter-spacing:.2em;text-transform:uppercase}
+.fc-ctrls{display:flex;gap:10px;align-items:center}
+
+/* Practice / Quiz / CBT */
+.qz-wrap{display:grid;gap:14px}
+.qz-q{padding:22px}
+.qz-opt{display:block;width:100%;text-align:left;padding:14px 16px;border-radius:12px;background:var(--surface);border:1px solid var(--border);margin-top:8px;transition:all .15s}
+.qz-opt:hover{background:var(--surface-2);transform:translateX(2px)}
+.qz-opt.correct{background:rgba(52,211,153,.18);border-color:rgba(52,211,153,.6)}
+.qz-opt.wrong{background:rgba(248,113,113,.15);border-color:rgba(248,113,113,.5)}
+.qz-opt.disabled{pointer-events:none;opacity:.85}
+.qz-meta{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.qz-progress{height:6px;background:var(--surface);border-radius:99px;overflow:hidden}
+.qz-progress span{display:block;height:100%;background:var(--grad);transition:width .3s}
+.timer{font-variant-numeric:tabular-nums;font-weight:700;color:var(--primary)}
+.timer.warn{color:var(--warn)}
+.timer.danger{color:var(--danger);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.5}}
+
+/* Periodic Table */
+.pt-wrap{overflow:auto;padding:8px}
+.pt-grid{display:grid;grid-template-columns:repeat(18,minmax(48px,1fr));gap:4px;min-width:900px}
+.pt-cell{aspect-ratio:1/1;border-radius:8px;padding:4px;display:flex;flex-direction:column;justify-content:space-between;font-size:10px;cursor:pointer;transition:transform .1s;border:1px solid rgba(255,255,255,.08)}
+.pt-cell:hover{transform:scale(1.08);z-index:2;box-shadow:0 8px 20px rgba(0,0,0,.4)}
+.pt-cell b{font-size:15px}
+.pt-cell .num{opacity:.7;font-size:9px}
+.pt-cell .nm{font-size:8px;opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pt-empty{background:transparent;border:0;pointer-events:none}
+.cat-nonmetal{background:linear-gradient(135deg,#5eead4,#0d9488);color:#052e2b}
+.cat-noble{background:linear-gradient(135deg,#c084fc,#7e22ce);color:#2a0e42}
+.cat-alkali{background:linear-gradient(135deg,#f87171,#b91c1c);color:#3b0a0a}
+.cat-alkaline{background:linear-gradient(135deg,#fb923c,#c2410c);color:#3a1204}
+.cat-metalloid{background:linear-gradient(135deg,#fbbf24,#a16207);color:#2a1a04}
+.cat-postmetal{background:linear-gradient(135deg,#93c5fd,#1d4ed8);color:#0a1a3a}
+.cat-transition{background:linear-gradient(135deg,#7c9bff,#4338ca);color:#0a0e2e}
+.cat-lanth{background:linear-gradient(135deg,#f472b6,#a21caf);color:#2e0a24}
+.cat-actin{background:linear-gradient(135deg,#fda4af,#9f1239);color:#3a0a14}
+.cat-halogen{background:linear-gradient(135deg,#fde047,#a16207);color:#2a1a04}
+.cat-unknown{background:linear-gradient(135deg,#94a3b8,#475569);color:#0f172a}
+.pt-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.pt-legend span{font-size:11px;padding:4px 10px;border-radius:99px}
+
+/* Calculator */
+.calc-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.calc-tabs button{padding:8px 14px;border-radius:10px;background:var(--surface);border:1px solid var(--border);font-size:13px}
+.calc-tabs button.active{background:var(--grad);color:#0b1024;border:0}
+.calc-out{margin-top:14px;padding:16px;border-radius:12px;background:rgba(94,234,212,.08);border:1px solid rgba(94,234,212,.25);font-family:ui-monospace,monospace;font-size:14px;white-space:pre-wrap}
+
+/* Mastery */
+.m-bar{height:8px;border-radius:99px;background:var(--surface);overflow:hidden}
+.m-bar span{display:block;height:100%;background:var(--grad)}
+.mastery-row{display:grid;grid-template-columns:1fr 100px 120px;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
+.mastery-row:last-child{border-bottom:0}
+</style>`);
+
+/* ---------- User-model extensions ---------- */
+function ensureStats(){
+  const u = currentUser(); if(!u) return null;
+  let dirty=false;
+  if(!u.topicStats){ u.topicStats={}; dirty=true; }
+  if(!u.badges){ u.badges=[]; dirty=true; }
+  if(!u.cbtHistory){ u.cbtHistory=[]; dirty=true; }
+  if(dirty) updateCurrentUser({topicStats:u.topicStats,badges:u.badges,cbtHistory:u.cbtHistory});
+  return u;
+}
+function awardXP(amount, reason){
+  const u = currentUser(); if(!u) return;
+  const newXP = u.xp + amount;
+  const newLvl = Math.floor(newXP/100)+1;
+  const leveled = newLvl > u.level;
+  updateCurrentUser({ xp:newXP, level:newLvl });
+  if(reason) toast(`+${amount} XP · ${reason}`, "ok");
+  if(leveled) toast(`⭐ Level up! Now Level ${newLvl}`, "ok");
+  const badge = $("#xpBadge"); if(badge) badge.textContent = "✨ "+newXP+" XP · Lv "+newLvl;
+}
+function recordAnswer(topic, correct){
+  const u = ensureStats(); if(!u) return;
+  const s = u.topicStats[topic] || {attempts:0,correct:0};
+  s.attempts++; if(correct) s.correct++;
+  u.topicStats[topic]=s;
+  updateCurrentUser({topicStats:u.topicStats});
+}
+function markTopicComplete(topic){
+  const u = currentUser(); if(!u) return;
+  if(!u.completedTopics.includes(topic)){
+    u.completedTopics.push(topic);
+    updateCurrentUser({completedTopics:u.completedTopics});
+  }
+}
+
+/* ============================================================
+   CONTENT BANKS
+============================================================ */
+
+/* ---- Topic Notes (curated summaries) ---- */
+const TOPIC_NOTES = [
+  { id:"matter", title:"Matter & Its States", body:`
+    <h3>Matter and Its States</h3>
+    <p>Matter is anything that has mass and occupies space. It exists in three common states: <b>solid, liquid and gas</b>, plus <b>plasma</b> at very high energies.</p>
+    <h4>Key properties</h4>
+    <ul>
+      <li><b>Solid</b> — definite shape and volume; particles vibrate in fixed positions.</li>
+      <li><b>Liquid</b> — definite volume, no fixed shape; particles slide past each other.</li>
+      <li><b>Gas</b> — neither fixed shape nor volume; particles move freely.</li>
+    </ul>
+    <h4>Changes of state</h4>
+    <ul><li>Melting, freezing, evaporation, condensation, sublimation, deposition.</li></ul>
+    <h4>Summary</h4>
+    <p>Changes of state are physical, not chemical — no new substance forms.</p>` },
+  { id:"atomic", title:"Atomic Structure", body:`
+    <h3>Atomic Structure</h3>
+    <p>An atom is the smallest unit of an element. It contains a dense <b>nucleus</b> of protons and neutrons, surrounded by electrons in shells.</p>
+    <h4>Sub-atomic particles</h4>
+    <ul>
+      <li><b>Proton</b> — mass 1 u, charge +1</li>
+      <li><b>Neutron</b> — mass 1 u, charge 0</li>
+      <li><b>Electron</b> — mass ~1/1836 u, charge −1</li>
+    </ul>
+    <h4>Key definitions</h4>
+    <ul>
+      <li><b>Atomic number (Z)</b> — number of protons.</li>
+      <li><b>Mass number (A)</b> — protons + neutrons.</li>
+      <li><b>Isotopes</b> — same Z, different A.</li>
+    </ul>
+    <p>Electrons fill shells 2, 8, 8, 18 … following the <code>2n²</code> rule.</p>` },
+  { id:"periodic", title:"The Periodic Table", body:`
+    <h3>The Periodic Table</h3>
+    <p>Elements are arranged in order of increasing atomic number. Vertical columns are <b>groups</b>; horizontal rows are <b>periods</b>.</p>
+    <h4>Trends</h4>
+    <ul>
+      <li>Atomic radius <b>decreases</b> across a period, <b>increases</b> down a group.</li>
+      <li>Ionisation energy <b>increases</b> across, <b>decreases</b> down.</li>
+      <li>Electronegativity peaks at fluorine.</li>
+    </ul>
+    <h4>Major families</h4>
+    <ul><li>Group 1 alkali metals · Group 2 alkaline earth · Group 17 halogens · Group 18 noble gases.</li></ul>` },
+  { id:"bonding", title:"Chemical Bonding", body:`
+    <h3>Chemical Bonding</h3>
+    <p>Atoms bond to attain a stable (usually 8-electron) outer shell.</p>
+    <h4>Bond types</h4>
+    <ul>
+      <li><b>Ionic</b> — transfer of electrons (metal + non-metal). e.g. NaCl.</li>
+      <li><b>Covalent</b> — sharing of electrons (non-metals). e.g. H₂O, CH₄.</li>
+      <li><b>Metallic</b> — sea of delocalised electrons among cations.</li>
+      <li><b>Hydrogen bond</b> — weak dipole attraction; explains water's high boiling point.</li>
+    </ul>` },
+  { id:"stoich", title:"Stoichiometry & the Mole", body:`
+    <h3>Stoichiometry & the Mole</h3>
+    <p>One <b>mole</b> = 6.022 × 10²³ particles (Avogadro's number).</p>
+    <h4>Core formulas</h4>
+    <ul>
+      <li><code>n = m / M</code> — moles = mass / molar mass</li>
+      <li><code>n = V / 22.4</code> — moles of gas at STP (litres)</li>
+      <li><code>n = C × V</code> — moles in solution</li>
+    </ul>
+    <p>A balanced equation gives mole ratios between reactants and products.</p>` },
+  { id:"acids", title:"Acids, Bases & Salts", body:`
+    <h3>Acids, Bases and Salts</h3>
+    <ul>
+      <li><b>Acid</b> — releases H⁺ in water (HCl, H₂SO₄).</li>
+      <li><b>Base</b> — releases OH⁻ (NaOH, KOH).</li>
+      <li><b>Salt</b> — product of acid + base neutralisation.</li>
+    </ul>
+    <h4>pH scale</h4>
+    <p><code>pH = −log[H⁺]</code>. pH &lt; 7 acidic, = 7 neutral, &gt; 7 basic.</p>
+    <p>Indicators: litmus, phenolphthalein, methyl orange, universal indicator.</p>` },
+  { id:"redox", title:"Oxidation & Reduction", body:`
+    <h3>Oxidation & Reduction (Redox)</h3>
+    <ul>
+      <li><b>Oxidation</b> — loss of electrons / gain of oxygen.</li>
+      <li><b>Reduction</b> — gain of electrons / loss of oxygen.</li>
+      <li>Mnemonic: <b>OIL RIG</b>.</li>
+    </ul>
+    <p>Oxidising agents accept electrons; reducing agents donate them.</p>` },
+  { id:"electro", title:"Electrochemistry", body:`
+    <h3>Electrochemistry</h3>
+    <p>Study of chemical reactions producing or driven by electricity.</p>
+    <h4>Cells</h4>
+    <ul>
+      <li><b>Galvanic (voltaic)</b> — spontaneous, converts chemical → electrical energy.</li>
+      <li><b>Electrolytic</b> — external voltage drives a non-spontaneous reaction.</li>
+    </ul>
+    <p><b>Faraday's law:</b> mass deposited ∝ charge passed. <code>m = (Q × M)/(n × F)</code>.</p>` },
+  { id:"kinetics", title:"Reaction Rates", body:`
+    <h3>Rates of Reaction</h3>
+    <p>Rate = change in concentration ÷ time.</p>
+    <h4>Factors that affect rate</h4>
+    <ul>
+      <li>Concentration / pressure</li><li>Temperature</li>
+      <li>Surface area</li><li>Catalyst</li><li>Light (for some reactions)</li>
+    </ul>
+    <p>Collision theory: reactions occur when particles collide with sufficient energy and correct orientation.</p>` },
+  { id:"equilibrium", title:"Chemical Equilibrium", body:`
+    <h3>Chemical Equilibrium</h3>
+    <p>Reversible reactions reach equilibrium when forward and reverse rates are equal.</p>
+    <h4>Le Chatelier's Principle</h4>
+    <p>If a stress (concentration, temperature, pressure) is applied, the position of equilibrium shifts to minimise the change.</p>
+    <p>Equilibrium constant <code>Kc</code> depends only on temperature.</p>` },
+  { id:"organic", title:"Introduction to Organic Chemistry", body:`
+    <h3>Organic Chemistry Basics</h3>
+    <p>Carbon forms four bonds, enabling long chains and rings.</p>
+    <h4>Families (homologous series)</h4>
+    <ul>
+      <li><b>Alkanes</b> CₙH₂ₙ₊₂ — saturated (methane, ethane…)</li>
+      <li><b>Alkenes</b> CₙH₂ₙ — one C=C double bond</li>
+      <li><b>Alkynes</b> CₙH₂ₙ₋₂ — one C≡C triple bond</li>
+      <li><b>Alcohols</b> —OH group; <b>Acids</b> —COOH; <b>Esters</b> —COOR.</li>
+    </ul>` },
+  { id:"gases", title:"Gas Laws", body:`
+    <h3>Gas Laws</h3>
+    <ul>
+      <li><b>Boyle:</b> P₁V₁ = P₂V₂ (T constant)</li>
+      <li><b>Charles:</b> V₁/T₁ = V₂/T₂ (P constant)</li>
+      <li><b>Gay-Lussac:</b> P₁/T₁ = P₂/T₂ (V constant)</li>
+      <li><b>Combined:</b> P₁V₁/T₁ = P₂V₂/T₂</li>
+      <li><b>Ideal gas:</b> PV = nRT (R = 0.0821 L·atm/mol·K)</li>
+    </ul>` },
+  { id:"solutions", title:"Solutions & Solubility", body:`
+    <h3>Solutions</h3>
+    <p>A homogeneous mixture of solute and solvent.</p>
+    <h4>Concentration units</h4>
+    <ul>
+      <li><b>Molarity (M):</b> mol solute / L solution</li>
+      <li><b>Molality (m):</b> mol solute / kg solvent</li>
+      <li><b>Mass %:</b> (mass solute / mass solution) × 100</li>
+    </ul>
+    <p>Dilution: <code>C₁V₁ = C₂V₂</code>.</p>` },
+  { id:"thermo", title:"Thermochemistry", body:`
+    <h3>Thermochemistry</h3>
+    <p>Study of energy changes in reactions.</p>
+    <ul>
+      <li><b>Exothermic</b> — releases heat, ΔH &lt; 0.</li>
+      <li><b>Endothermic</b> — absorbs heat, ΔH &gt; 0.</li>
+    </ul>
+    <p>Hess's law: total enthalpy change is independent of path.</p>` },
+  { id:"nuclear", title:"Nuclear Chemistry", body:`
+    <h3>Nuclear Chemistry</h3>
+    <ul>
+      <li><b>Alpha (α)</b> — helium nucleus, low penetration.</li>
+      <li><b>Beta (β)</b> — high-energy electron.</li>
+      <li><b>Gamma (γ)</b> — electromagnetic radiation, high penetration.</li>
+    </ul>
+    <p>Half-life is the time for half of a radioactive sample to decay.</p>` }
+];
+
+/* ---- Flashcards ---- */
+const FLASHCARDS = [
+  ["What is an atom?","The smallest particle of an element that retains its chemical properties.","atomic"],
+  ["Avogadro's number?","6.022 × 10²³ particles per mole.","stoich"],
+  ["Symbol for sodium?","Na (from Latin natrium).","periodic"],
+  ["What is a mole?","The amount of substance containing 6.022×10²³ particles.","stoich"],
+  ["Define isotopes.","Atoms of the same element with the same protons but different neutrons.","atomic"],
+  ["pH of pure water?","7 (neutral) at 25 °C.","acids"],
+  ["Oxidation is…","Loss of electrons (or gain of oxygen).","redox"],
+  ["Reduction is…","Gain of electrons (or loss of oxygen).","redox"],
+  ["Formula of sulfuric acid?","H₂SO₄.","acids"],
+  ["State the ideal gas law.","PV = nRT.","gases"],
+  ["What is a covalent bond?","A shared pair of electrons between two non-metals.","bonding"],
+  ["Group 1 elements are called…","Alkali metals.","periodic"],
+  ["Halogens are in group…","17 (VII A).","periodic"],
+  ["Le Chatelier's principle?","If a stress is applied to equilibrium, it shifts to oppose the change.","equilibrium"],
+  ["Alkane general formula?","CₙH₂ₙ₊₂.","organic"],
+  ["Alkene general formula?","CₙH₂ₙ.","organic"],
+  ["Boyle's law states…","At constant T, P × V = constant.","gases"],
+  ["Charles' law states…","At constant P, V ∝ T.","gases"],
+  ["What is molarity?","Moles of solute per litre of solution.","solutions"],
+  ["Faraday constant?","96 485 C/mol.","electro"],
+  ["Catalyst effect?","Speeds up a reaction without being consumed.","kinetics"],
+  ["Endothermic means?","Absorbs heat; ΔH > 0.","thermo"],
+  ["Exothermic means?","Releases heat; ΔH < 0.","thermo"],
+  ["Half-life definition?","Time for half of a radioactive sample to decay.","nuclear"],
+  ["Neutralisation product?","Salt + water.","acids"],
+  ["Metallic bonding?","Sea of delocalised electrons among positive ions.","bonding"],
+  ["What is electronegativity?","The tendency of an atom to attract shared electrons.","bonding"],
+  ["Formula of ammonia?","NH₃.","organic"],
+  ["Standard temperature (STP)?","0 °C (273.15 K), 1 atm.","gases"],
+  ["Molar volume of a gas at STP?","22.4 L/mol.","gases"]
+];
+
+/* ---- Question bank (used by Practice, Quiz and CBT) ---- */
+const QUESTIONS = [
+  {t:"atomic",d:1,q:"The number of protons in an atom is called the:",o:["Mass number","Atomic number","Neutron number","Valency"],a:1,e:"Atomic number Z = number of protons."},
+  {t:"atomic",d:1,q:"Which particle has no charge?",o:["Proton","Electron","Neutron","Positron"],a:2,e:"Neutrons are electrically neutral."},
+  {t:"atomic",d:2,q:"Isotopes differ in:",o:["Protons","Electrons","Neutrons","Charge"],a:2,e:"Same protons, different neutrons."},
+  {t:"atomic",d:2,q:"The maximum electrons in the second shell is:",o:["2","6","8","18"],a:2,e:"Shell 2 holds up to 8 electrons."},
+  {t:"atomic",d:3,q:"An atom of ³⁵₁₇Cl has how many neutrons?",o:["17","18","35","52"],a:1,e:"Neutrons = A − Z = 35 − 17 = 18."},
+  {t:"atomic",d:4,q:"Which quantum number determines orbital shape?",o:["n","l","mₗ","mₛ"],a:1,e:"The azimuthal quantum number l defines orbital shape."},
+
+  {t:"periodic",d:1,q:"Group 1 metals are called:",o:["Halogens","Alkali metals","Noble gases","Transition"],a:1,e:"Group 1 = alkali metals."},
+  {t:"periodic",d:1,q:"The symbol for potassium is:",o:["P","Po","K","Pt"],a:2,e:"Potassium = K (kalium)."},
+  {t:"periodic",d:2,q:"Atomic radius across a period generally:",o:["Increases","Decreases","Stays same","Doubles"],a:1,e:"More protons pull electrons closer."},
+  {t:"periodic",d:2,q:"Which is a noble gas?",o:["Chlorine","Argon","Sodium","Iron"],a:1,e:"Argon is in Group 18."},
+  {t:"periodic",d:3,q:"Which element has the highest electronegativity?",o:["Oxygen","Chlorine","Fluorine","Nitrogen"],a:2,e:"Fluorine (3.98 on Pauling scale)."},
+  {t:"periodic",d:4,q:"The lanthanides belong to which block?",o:["s","p","d","f"],a:3,e:"Lanthanides are f-block."},
+
+  {t:"bonding",d:1,q:"NaCl is held together by which bond?",o:["Covalent","Ionic","Metallic","Hydrogen"],a:1,e:"Metal + non-metal = ionic."},
+  {t:"bonding",d:2,q:"Which compound has covalent bonding?",o:["KCl","MgO","H₂O","CaF₂"],a:2,e:"Water is molecular / covalent."},
+  {t:"bonding",d:2,q:"Metallic bonding involves:",o:["Shared pairs","Ion transfer","Delocalised electrons","Dipoles"],a:2,e:"Sea of delocalised electrons."},
+  {t:"bonding",d:3,q:"Hydrogen bonding is strongest between:",o:["H–C","H–Cl","H–O","H–S"],a:2,e:"H bonded to O/N/F gives strongest H-bonds."},
+
+  {t:"stoich",d:1,q:"Avogadro's number is:",o:["6.022×10²²","6.022×10²³","3.14×10²³","1.6×10⁻¹⁹"],a:1,e:"6.022 × 10²³ particles per mole."},
+  {t:"stoich",d:2,q:"Molar mass of H₂O is (g/mol):",o:["16","18","20","32"],a:1,e:"2(1)+16 = 18."},
+  {t:"stoich",d:2,q:"Moles in 44 g of CO₂ (M=44):",o:["0.5","1","2","4"],a:1,e:"n = m/M = 44/44 = 1."},
+  {t:"stoich",d:3,q:"At STP, 5.6 L of a gas contains how many moles?",o:["0.125","0.25","0.5","1"],a:1,e:"n = V/22.4 = 5.6/22.4 = 0.25."},
+  {t:"stoich",d:4,q:"How many atoms are in 2 mol of Ne?",o:["3.01×10²³","6.02×10²³","1.20×10²⁴","2.40×10²⁴"],a:2,e:"2 × 6.022×10²³ = 1.20×10²⁴."},
+
+  {t:"acids",d:1,q:"pH of a neutral solution is:",o:["0","7","14","1"],a:1,e:"Neutral pH = 7 at 25 °C."},
+  {t:"acids",d:1,q:"Which is a strong acid?",o:["CH₃COOH","H₂CO₃","HCl","NH₃"],a:2,e:"HCl fully ionises in water."},
+  {t:"acids",d:2,q:"Neutralisation always produces:",o:["Gas","Salt + water","Acid","Base"],a:1,e:"Acid + base → salt + water."},
+  {t:"acids",d:3,q:"[H⁺] in a solution of pH 3 is:",o:["10⁻³ M","10³ M","3 M","10⁻¹¹ M"],a:0,e:"pH = −log[H⁺], so [H⁺] = 10⁻³."},
+
+  {t:"redox",d:1,q:"Oxidation is:",o:["Gain of e⁻","Loss of e⁻","Gain of H","Loss of O"],a:1,e:"Oxidation Is Loss of electrons."},
+  {t:"redox",d:2,q:"In 2Mg + O₂ → 2MgO, Mg is:",o:["Reduced","Oxidised","Catalyst","Unchanged"],a:1,e:"Mg loses electrons → oxidised."},
+  {t:"redox",d:3,q:"Oxidation state of S in H₂SO₄:",o:["+2","+4","+6","−2"],a:2,e:"2(+1)+S+4(−2)=0 → S=+6."},
+
+  {t:"gases",d:1,q:"At STP, 1 mole of any gas occupies:",o:["11.2 L","22.4 L","24.0 L","44.8 L"],a:1,e:"Molar volume = 22.4 L at STP."},
+  {t:"gases",d:2,q:"Boyle's law relates:",o:["P and T","V and T","P and V","n and V"],a:2,e:"P × V = constant at fixed T."},
+  {t:"gases",d:3,q:"A gas at 2 atm, 4 L is compressed to 1 L. New pressure?",o:["2 atm","4 atm","6 atm","8 atm"],a:3,e:"P₁V₁ = P₂V₂ → 2×4 = P₂×1 → 8 atm."},
+
+  {t:"organic",d:1,q:"General formula of alkanes:",o:["CₙH₂ₙ","CₙH₂ₙ₊₂","CₙH₂ₙ₋₂","CₙHₙ"],a:1,e:"Saturated hydrocarbons: CₙH₂ₙ₊₂."},
+  {t:"organic",d:2,q:"The functional group –OH is called:",o:["Aldehyde","Alcohol","Acid","Ester"],a:1,e:"−OH = hydroxyl / alcohol."},
+  {t:"organic",d:3,q:"Ethene (C₂H₄) contains:",o:["Single bond","Double bond","Triple bond","No bond"],a:1,e:"Alkenes contain one C=C."},
+
+  {t:"kinetics",d:1,q:"A catalyst:",o:["Is consumed","Slows reaction","Speeds reaction","Changes products"],a:2,e:"Catalyst speeds reaction, isn't consumed."},
+  {t:"kinetics",d:2,q:"Increasing temperature usually:",o:["Slows rate","Speeds rate","No effect","Freezes rxn"],a:1,e:"Higher T → more successful collisions."},
+  {t:"kinetics",d:3,q:"Activation energy is:",o:["Energy of products","Minimum energy to react","Bond energy","Enthalpy"],a:1,e:"Threshold energy for reaction."},
+
+  {t:"equilibrium",d:1,q:"At equilibrium, rates of forward and reverse are:",o:["Zero","Equal","Different","Increasing"],a:1,e:"Dynamic equilibrium: rates equal."},
+  {t:"equilibrium",d:2,q:"Increasing pressure on N₂+3H₂⇌2NH₃ shifts to:",o:["Left","Right","No shift","Depends"],a:1,e:"Shift toward fewer gas moles → right."},
+
+  {t:"electro",d:1,q:"Cathode is the electrode where:",o:["Oxidation occurs","Reduction occurs","No reaction","Salt bridge is"],a:1,e:"Reduction happens at the cathode."},
+  {t:"electro",d:2,q:"Faraday's constant is:",o:["6.022×10²³","96 485 C/mol","8.314 J/mol·K","0.0821 L·atm/mol·K"],a:1,e:"F = 96 485 C per mole of electrons."},
+
+  {t:"thermo",d:1,q:"Exothermic reaction has ΔH:",o:["Positive","Negative","Zero","Infinite"],a:1,e:"Releases heat → ΔH < 0."},
+  {t:"thermo",d:2,q:"Hess's law is based on:",o:["Rate","Path independence of enthalpy","Concentration","Temperature"],a:1,e:"Total ΔH depends only on states."},
+
+  {t:"solutions",d:1,q:"Molarity is expressed in:",o:["g/L","mol/L","mol/kg","mL/g"],a:1,e:"M = mol of solute / L of solution."},
+  {t:"solutions",d:2,q:"Diluting 100 mL of 2 M to 200 mL gives:",o:["0.5 M","1 M","2 M","4 M"],a:1,e:"C₁V₁ = C₂V₂ → 2×100 = C×200 → 1 M."},
+
+  {t:"nuclear",d:1,q:"Alpha particle is:",o:["Electron","Helium nucleus","Photon","Proton"],a:1,e:"α = ⁴₂He nucleus."},
+  {t:"nuclear",d:2,q:"Half-life is the time for:",o:["All decay","Half of sample to decay","No change","Double the sample"],a:1,e:"Definition of half-life."}
+];
+
+/* ---- Formulae ---- */
+const FORMULAE = [
+  ["Water","H₂O"],["Carbon dioxide","CO₂"],["Ammonia","NH₃"],["Methane","CH₄"],
+  ["Ethanol","C₂H₅OH"],["Ethanoic acid","CH₃COOH"],["Glucose","C₆H₁₂O₆"],
+  ["Sodium chloride","NaCl"],["Sodium hydroxide","NaOH"],["Potassium hydroxide","KOH"],
+  ["Hydrochloric acid","HCl"],["Sulfuric acid","H₂SO₄"],["Nitric acid","HNO₃"],
+  ["Carbonic acid","H₂CO₃"],["Calcium carbonate","CaCO₃"],["Calcium hydroxide","Ca(OH)₂"],
+  ["Magnesium oxide","MgO"],["Iron(III) oxide","Fe₂O₃"],["Copper(II) sulfate","CuSO₄"],
+  ["Sodium carbonate","Na₂CO₃"],["Sodium bicarbonate","NaHCO₃"],["Ammonium chloride","NH₄Cl"],
+  ["Silver nitrate","AgNO₃"],["Potassium permanganate","KMnO₄"],["Potassium dichromate","K₂Cr₂O₇"],
+  ["Hydrogen peroxide","H₂O₂"],["Nitrogen","N₂"],["Oxygen","O₂"],["Ozone","O₃"],
+  ["Chlorine","Cl₂"],["Benzene","C₆H₆"],["Ethene","C₂H₄"],["Ethyne","C₂H₂"],
+  ["Propane","C₃H₈"],["Butane","C₄H₁₀"]
+];
+
+/* ---- Dictionary ---- */
+const DICTIONARY = [
+  ["Atom","The smallest particle of an element that retains its chemical identity."],
+  ["Molecule","Two or more atoms chemically bonded together."],
+  ["Element","A pure substance made of only one kind of atom."],
+  ["Compound","A substance made of two or more elements chemically combined."],
+  ["Mixture","Two or more substances physically combined, not chemically bonded."],
+  ["Ion","An atom or molecule with a net electric charge."],
+  ["Cation","A positively charged ion."],
+  ["Anion","A negatively charged ion."],
+  ["Isotope","Atoms of the same element with different numbers of neutrons."],
+  ["Mole","The amount of substance containing 6.022×10²³ particles."],
+  ["Molar mass","Mass of one mole of a substance, in g/mol."],
+  ["Avogadro's number","6.022 × 10²³ — particles per mole."],
+  ["Solute","The substance dissolved in a solvent."],
+  ["Solvent","The medium in which a solute is dissolved."],
+  ["Solution","A homogeneous mixture of solute and solvent."],
+  ["Concentration","The amount of solute per unit volume of solution."],
+  ["Molarity","Moles of solute per litre of solution."],
+  ["pH","A measure of hydrogen ion concentration; pH = −log[H⁺]."],
+  ["Acid","A substance that donates H⁺ ions in water."],
+  ["Base","A substance that accepts H⁺ or donates OH⁻ ions."],
+  ["Salt","An ionic compound formed from an acid–base reaction."],
+  ["Neutralisation","Reaction of an acid and a base to form salt and water."],
+  ["Oxidation","Loss of electrons or gain of oxygen."],
+  ["Reduction","Gain of electrons or loss of oxygen."],
+  ["Redox reaction","A reaction involving oxidation and reduction."],
+  ["Electrolyte","A substance that conducts electricity when dissolved or molten."],
+  ["Anode","The electrode where oxidation occurs."],
+  ["Cathode","The electrode where reduction occurs."],
+  ["Catalyst","A substance that speeds up a reaction without being consumed."],
+  ["Activation energy","Minimum energy required for a reaction to occur."],
+  ["Equilibrium","A state where forward and reverse reaction rates are equal."],
+  ["Le Chatelier's principle","A system at equilibrium shifts to counter any disturbance."],
+  ["Exothermic","A reaction that releases heat (ΔH < 0)."],
+  ["Endothermic","A reaction that absorbs heat (ΔH > 0)."],
+  ["Enthalpy","Total heat content of a system, symbol H."],
+  ["Entropy","A measure of disorder in a system, symbol S."],
+  ["Hydrocarbon","A compound of only hydrogen and carbon."],
+  ["Alkane","Saturated hydrocarbon with only single C–C bonds."],
+  ["Alkene","Hydrocarbon containing at least one C=C double bond."],
+  ["Alkyne","Hydrocarbon containing at least one C≡C triple bond."],
+  ["Isomer","Compounds with the same molecular formula but different structures."],
+  ["Polymer","A large molecule built from repeating monomer units."],
+  ["Half-life","Time required for half of a radioactive sample to decay."],
+  ["Electronegativity","Tendency of an atom to attract shared bonding electrons."],
+  ["Valency","Combining power of an element based on outer-shell electrons."],
+  ["Allotrope","Different structural forms of the same element (e.g. diamond, graphite)."],
+  ["STP","Standard Temperature and Pressure (0 °C, 1 atm)."],
+  ["Ideal gas","A hypothetical gas obeying PV=nRT perfectly."],
+  ["Buffer","A solution that resists changes in pH."]
+];
+
+/* ---- Elements 1–118 [Z, symbol, name, mass, category, group, period] ---- */
+const ELEMENTS = [
+  [1,"H","Hydrogen",1.008,"nonmetal",1,1],[2,"He","Helium",4.0026,"noble",18,1],
+  [3,"Li","Lithium",6.94,"alkali",1,2],[4,"Be","Beryllium",9.0122,"alkaline",2,2],
+  [5,"B","Boron",10.81,"metalloid",13,2],[6,"C","Carbon",12.011,"nonmetal",14,2],
+  [7,"N","Nitrogen",14.007,"nonmetal",15,2],[8,"O","Oxygen",15.999,"nonmetal",16,2],
+  [9,"F","Fluorine",18.998,"halogen",17,2],[10,"Ne","Neon",20.180,"noble",18,2],
+  [11,"Na","Sodium",22.990,"alkali",1,3],[12,"Mg","Magnesium",24.305,"alkaline",2,3],
+  [13,"Al","Aluminium",26.982,"postmetal",13,3],[14,"Si","Silicon",28.085,"metalloid",14,3],
+  [15,"P","Phosphorus",30.974,"nonmetal",15,3],[16,"S","Sulfur",32.06,"nonmetal",16,3],
+  [17,"Cl","Chlorine",35.45,"halogen",17,3],[18,"Ar","Argon",39.948,"noble",18,3],
+  [19,"K","Potassium",39.098,"alkali",1,4],[20,"Ca","Calcium",40.078,"alkaline",2,4],
+  [21,"Sc","Scandium",44.956,"transition",3,4],[22,"Ti","Titanium",47.867,"transition",4,4],
+  [23,"V","Vanadium",50.942,"transition",5,4],[24,"Cr","Chromium",51.996,"transition",6,4],
+  [25,"Mn","Manganese",54.938,"transition",7,4],[26,"Fe","Iron",55.845,"transition",8,4],
+  [27,"Co","Cobalt",58.933,"transition",9,4],[28,"Ni","Nickel",58.693,"transition",10,4],
+  [29,"Cu","Copper",63.546,"transition",11,4],[30,"Zn","Zinc",65.38,"transition",12,4],
+  [31,"Ga","Gallium",69.723,"postmetal",13,4],[32,"Ge","Germanium",72.630,"metalloid",14,4],
+  [33,"As","Arsenic",74.922,"metalloid",15,4],[34,"Se","Selenium",78.971,"nonmetal",16,4],
+  [35,"Br","Bromine",79.904,"halogen",17,4],[36,"Kr","Krypton",83.798,"noble",18,4],
+  [37,"Rb","Rubidium",85.468,"alkali",1,5],[38,"Sr","Strontium",87.62,"alkaline",2,5],
+  [39,"Y","Yttrium",88.906,"transition",3,5],[40,"Zr","Zirconium",91.224,"transition",4,5],
+  [41,"Nb","Niobium",92.906,"transition",5,5],[42,"Mo","Molybdenum",95.95,"transition",6,5],
+  [43,"Tc","Technetium",98,"transition",7,5],[44,"Ru","Ruthenium",101.07,"transition",8,5],
+  [45,"Rh","Rhodium",102.91,"transition",9,5],[46,"Pd","Palladium",106.42,"transition",10,5],
+  [47,"Ag","Silver",107.87,"transition",11,5],[48,"Cd","Cadmium",112.41,"transition",12,5],
+  [49,"In","Indium",114.82,"postmetal",13,5],[50,"Sn","Tin",118.71,"postmetal",14,5],
+  [51,"Sb","Antimony",121.76,"metalloid",15,5],[52,"Te","Tellurium",127.60,"metalloid",16,5],
+  [53,"I","Iodine",126.90,"halogen",17,5],[54,"Xe","Xenon",131.29,"noble",18,5],
+  [55,"Cs","Caesium",132.91,"alkali",1,6],[56,"Ba","Barium",137.33,"alkaline",2,6],
+  [57,"La","Lanthanum",138.91,"lanth",3,6],
+  [58,"Ce","Cerium",140.12,"lanth",0,9],[59,"Pr","Praseodymium",140.91,"lanth",0,9],
+  [60,"Nd","Neodymium",144.24,"lanth",0,9],[61,"Pm","Promethium",145,"lanth",0,9],
+  [62,"Sm","Samarium",150.36,"lanth",0,9],[63,"Eu","Europium",151.96,"lanth",0,9],
+  [64,"Gd","Gadolinium",157.25,"lanth",0,9],[65,"Tb","Terbium",158.93,"lanth",0,9],
+  [66,"Dy","Dysprosium",162.50,"lanth",0,9],[67,"Ho","Holmium",164.93,"lanth",0,9],
+  [68,"Er","Erbium",167.26,"lanth",0,9],[69,"Tm","Thulium",168.93,"lanth",0,9],
+  [70,"Yb","Ytterbium",173.05,"lanth",0,9],[71,"Lu","Lutetium",174.97,"lanth",0,9],
+  [72,"Hf","Hafnium",178.49,"transition",4,6],[73,"Ta","Tantalum",180.95,"transition",5,6],
+  [74,"W","Tungsten",183.84,"transition",6,6],[75,"Re","Rhenium",186.21,"transition",7,6],
+  [76,"Os","Osmium",190.23,"transition",8,6],[77,"Ir","Iridium",192.22,"transition",9,6],
+  [78,"Pt","Platinum",195.08,"transition",10,6],[79,"Au","Gold",196.97,"transition",11,6],
+  [80,"Hg","Mercury",200.59,"transition",12,6],[81,"Tl","Thallium",204.38,"postmetal",13,6],
+  [82,"Pb","Lead",207.2,"postmetal",14,6],[83,"Bi","Bismuth",208.98,"postmetal",15,6],
+  [84,"Po","Polonium",209,"postmetal",16,6],[85,"At","Astatine",210,"halogen",17,6],
+  [86,"Rn","Radon",222,"noble",18,6],
+  [87,"Fr","Francium",223,"alkali",1,7],[88,"Ra","Radium",226,"alkaline",2,7],
+  [89,"Ac","Actinium",227,"actin",3,7],
+  [90,"Th","Thorium",232.04,"actin",0,10],[91,"Pa","Protactinium",231.04,"actin",0,10],
+  [92,"U","Uranium",238.03,"actin",0,10],[93,"Np","Neptunium",237,"actin",0,10],
+  [94,"Pu","Plutonium",244,"actin",0,10],[95,"Am","Americium",243,"actin",0,10],
+  [96,"Cm","Curium",247,"actin",0,10],[97,"Bk","Berkelium",247,"actin",0,10],
+  [98,"Cf","Californium",251,"actin",0,10],[99,"Es","Einsteinium",252,"actin",0,10],
+  [100,"Fm","Fermium",257,"actin",0,10],[101,"Md","Mendelevium",258,"actin",0,10],
+  [102,"No","Nobelium",259,"actin",0,10],[103,"Lr","Lawrencium",266,"actin",0,10],
+  [104,"Rf","Rutherfordium",267,"transition",4,7],[105,"Db","Dubnium",268,"transition",5,7],
+  [106,"Sg","Seaborgium",269,"transition",6,7],[107,"Bh","Bohrium",270,"transition",7,7],
+  [108,"Hs","Hassium",277,"transition",8,7],[109,"Mt","Meitnerium",278,"unknown",9,7],
+  [110,"Ds","Darmstadtium",281,"unknown",10,7],[111,"Rg","Roentgenium",282,"unknown",11,7],
+  [112,"Cn","Copernicium",285,"unknown",12,7],[113,"Nh","Nihonium",286,"unknown",13,7],
+  [114,"Fl","Flerovium",289,"unknown",14,7],[115,"Mc","Moscovium",290,"unknown",15,7],
+  [116,"Lv","Livermorium",293,"unknown",16,7],[117,"Ts","Tennessine",294,"unknown",17,7],
+  [118,"Og","Oganesson",294,"noble",18,7]
+];
+
+/* ============================================================
+   NOTES
+============================================================ */
+let notesActive = TOPIC_NOTES[0].id;
+function renderNotes(){
+  const list = TOPIC_NOTES.map(t=>`
+    <button class="${t.id===notesActive?'active':''}" onclick="notesOpen('${t.id}')">${t.title}</button>
+  `).join("");
+  const t = TOPIC_NOTES.find(x=>x.id===notesActive) || TOPIC_NOTES[0];
+  const done = currentUser().completedTopics.includes(t.id);
+  $("#page").innerHTML = `
+    <div class="p2-split">
+      <div class="card p2-list">${list}</div>
+      <div class="card p2-reader">
+        ${t.body}
+        <div style="margin-top:22px;display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn primary" onclick="notesComplete('${t.id}')" ${done?'disabled style="opacity:.6"':''}>${done?'✓ Completed':'Mark as read (+10 XP)'}</button>
+          <button class="btn" onclick="navigate('flashcards')">🃏 Practice with flashcards</button>
+          <button class="btn" onclick="startPractice('${t.id}')">✏️ Try practice questions</button>
+        </div>
+      </div>
+    </div>`;
+}
+function notesOpen(id){ notesActive=id; renderNotes(); }
+function notesComplete(id){
+  const u = currentUser();
+  if(u.completedTopics.includes(id)) return;
+  markTopicComplete(id);
+  awardXP(10, "Topic read");
+  renderNotes();
+}
+
+/* ============================================================
+   FLASHCARDS
+============================================================ */
+let fcIndex = 0, fcFlipped = false;
+function renderFlashcards(){
+  fcIndex = 0; fcFlipped = false;
+  drawFlashcard();
+}
+function drawFlashcard(){
+  const card = FLASHCARDS[fcIndex];
+  $("#page").innerHTML = `
+    <div class="fc-stage">
+      <div class="qz-meta" style="width:min(560px,100%)">
+        <span class="badge">Card ${fcIndex+1} / ${FLASHCARDS.length}</span>
+        <span class="badge">${card[2]}</span>
+      </div>
+      <div class="fc-card ${fcFlipped?'flipped':''}" onclick="flipFC()">
+        <div class="fc-inner">
+          <div class="fc-face"><small>Question</small><div>${card[0]}</div></div>
+          <div class="fc-face back"><small>Answer</small><div>${card[1]}</div></div>
+        </div>
+      </div>
+      <div class="fc-ctrls">
+        <button class="btn" onclick="prevFC()">← Prev</button>
+        <button class="btn primary" onclick="flipFC()">🔄 Flip</button>
+        <button class="btn" onclick="nextFC()">Next →</button>
+      </div>
+      <p class="muted" style="font-size:12px">+1 XP each time you flip a new card (max 20 per session).</p>
+    </div>`;
+}
+let fcXPtoday = 0;
+function flipFC(){
+  if(!fcFlipped && fcXPtoday<20){ awardXP(1,"Flashcard"); fcXPtoday++; }
+  fcFlipped = !fcFlipped; drawFlashcard();
+}
+function prevFC(){ fcIndex = (fcIndex-1+FLASHCARDS.length)%FLASHCARDS.length; fcFlipped=false; drawFlashcard(); }
+function nextFC(){ fcIndex = (fcIndex+1)%FLASHCARDS.length; fcFlipped=false; drawFlashcard(); }
+
+/* ============================================================
+   PRACTICE
+============================================================ */
+const DIFF_LABELS = ["","Easy","Medium","Hard","Expert","Elite","Master"];
+let prState = null;
+function renderPractice(){
+  const topics = TOPIC_NOTES.map(t=>`<option value="${t.id}">${t.title}</option>`).join("");
+  $("#page").innerHTML = `
+    <div class="card" style="padding:22px">
+      <h3 style="margin-bottom:8px">Practice questions</h3>
+      <p class="muted" style="font-size:13px;margin-bottom:14px">Pick a topic and difficulty tier. Get instant feedback and explanations after each answer.</p>
+      <div class="two-col">
+        <div class="field"><label class="label">Topic</label>
+          <select class="input" id="prTopic"><option value="">— Any topic —</option>${topics}</select></div>
+        <div class="field"><label class="label">Difficulty</label>
+          <select class="input" id="prDiff">
+            <option value="0">Any</option>
+            ${DIFF_LABELS.slice(1).map((d,i)=>`<option value="${i+1}">${i+1} · ${d}</option>`).join("")}
+          </select></div>
+      </div>
+      <button class="btn primary" onclick="startPractice()">Start practice</button>
+    </div>`;
+}
+function startPractice(forceTopic){
+  const topic = forceTopic || ($("#prTopic")?.value || "");
+  const diff = Number($("#prDiff")?.value || 0);
+  let pool = QUESTIONS.filter(q => (!topic||q.t===topic) && (!diff||q.d===diff));
+  if(!pool.length){ toast("No questions match — pick different filters", "err"); return; }
+  pool = [...pool].sort(()=>Math.random()-0.5).slice(0, Math.min(10,pool.length));
+  prState = { pool, idx:0, correct:0 };
+  drawPractice();
+}
+function drawPractice(){
+  const {pool,idx,correct} = prState;
+  const q = pool[idx];
+  $("#pageTitle").textContent = "Practice";
+  $("#page").innerHTML = `
+    <div class="qz-wrap">
+      <div class="qz-meta">
+        <span class="badge">Q ${idx+1}/${pool.length}</span>
+        <span class="badge">${q.t} · ${DIFF_LABELS[q.d]}</span>
+        <span class="badge">✓ ${correct}</span>
+      </div>
+      <div class="qz-progress"><span style="width:${(idx/pool.length)*100}%"></span></div>
+      <div class="card qz-q">
+        <h3 style="margin-bottom:12px">${q.q}</h3>
+        <div id="opts">
+          ${q.o.map((o,i)=>`<button class="qz-opt" onclick="prAnswer(${i})">${String.fromCharCode(65+i)}. ${o}</button>`).join("")}
+        </div>
+        <div id="fb" style="margin-top:14px"></div>
+      </div>
+    </div>`;
+}
+function prAnswer(i){
+  const q = prState.pool[prState.idx];
+  const correct = i===q.a;
+  $$("#opts .qz-opt").forEach((b,idx)=>{
+    b.classList.add("disabled");
+    if(idx===q.a) b.classList.add("correct");
+    else if(idx===i) b.classList.add("wrong");
+  });
+  recordAnswer(q.t, correct);
+  if(correct){ prState.correct++; awardXP(2 + q.d, "Correct"); }
+  $("#fb").innerHTML = `
+    <div class="card" style="padding:14px;background:${correct?'rgba(52,211,153,.1)':'rgba(248,113,113,.1)'};border-color:${correct?'rgba(52,211,153,.4)':'rgba(248,113,113,.4)'}">
+      <b>${correct?'✅ Correct!':'❌ Not quite.'}</b><br><span class="muted">${q.e}</span>
+    </div>
+    <button class="btn primary" style="margin-top:12px" onclick="prNext()">${prState.idx+1===prState.pool.length?'See results':'Next question →'}</button>`;
+}
+function prNext(){
+  prState.idx++;
+  if(prState.idx>=prState.pool.length){
+    const {correct,pool} = prState;
+    const pct = Math.round(correct/pool.length*100);
+    $("#page").innerHTML = `
+      <div class="card placeholder">
+        <div class="ico-big">${pct>=80?'🏆':pct>=50?'👍':'📚'}</div>
+        <h3>Practice complete</h3>
+        <p>You scored <b>${correct}/${pool.length}</b> (${pct}%).</p>
+        <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+          <button class="btn primary" onclick="renderPractice()">🔁 Another set</button>
+          <button class="btn" onclick="navigate('mastery')">🎯 View mastery</button>
+        </div>
+      </div>`;
+    return;
+  }
+  drawPractice();
+}
+
+/* ============================================================
+   QUIZ (timed, 10 random)
+============================================================ */
+let qzState=null, qzTimer=null;
+function renderQuiz(){
+  $("#page").innerHTML = `
+    <div class="card" style="padding:22px">
+      <h3>Quiz mode</h3>
+      <p class="muted" style="margin:6px 0 14px;font-size:13px">10 random questions across all topics. 60 seconds per question. XP for every correct answer.</p>
+      <button class="btn primary" onclick="startQuiz()">Start quiz</button>
+    </div>`;
+}
+function startQuiz(){
+  const pool = [...QUESTIONS].sort(()=>Math.random()-0.5).slice(0,10);
+  qzState = { pool, idx:0, correct:0, timeLeft:60, answered:false };
+  drawQuiz();
+}
+function drawQuiz(){
+  clearInterval(qzTimer);
+  const {pool,idx,correct} = qzState;
+  const q = pool[idx];
+  qzState.answered = false;
+  qzState.timeLeft = 60;
+  $("#pageTitle").textContent = "Quiz";
+  $("#page").innerHTML = `
+    <div class="qz-wrap">
+      <div class="qz-meta">
+        <span class="badge">Q ${idx+1}/${pool.length}</span>
+        <span class="badge">${q.t}</span>
+        <span class="badge">✓ ${correct}</span>
+        <span class="timer" id="qzTimer">01:00</span>
+      </div>
+      <div class="qz-progress"><span style="width:${(idx/pool.length)*100}%"></span></div>
+      <div class="card qz-q">
+        <h3 style="margin-bottom:12px">${q.q}</h3>
+        <div id="opts">${q.o.map((o,i)=>`<button class="qz-opt" onclick="qzAnswer(${i})">${String.fromCharCode(65+i)}. ${o}</button>`).join("")}</div>
+        <div id="fb" style="margin-top:14px"></div>
+      </div>
+    </div>`;
+  qzTimer = setInterval(()=>{
+    if(qzState.answered) return;
+    qzState.timeLeft--;
+    const t = $("#qzTimer"); if(!t){ clearInterval(qzTimer); return; }
+    const m = String(Math.floor(qzState.timeLeft/60)).padStart(2,"0");
+    const s = String(qzState.timeLeft%60).padStart(2,"0");
+    t.textContent = `${m}:${s}`;
+    t.className = "timer" + (qzState.timeLeft<=10?" danger":qzState.timeLeft<=20?" warn":"");
+    if(qzState.timeLeft<=0){ clearInterval(qzTimer); qzAnswer(-1); }
+  },1000);
+}
+function qzAnswer(i){
+  if(qzState.answered) return;
+  qzState.answered = true;
+  clearInterval(qzTimer);
+  const q = qzState.pool[qzState.idx];
+  const correct = i===q.a;
+  $$("#opts .qz-opt").forEach((b,idx)=>{
+    b.classList.add("disabled");
+    if(idx===q.a) b.classList.add("correct");
+    else if(idx===i) b.classList.add("wrong");
+  });
+  recordAnswer(q.t, correct);
+  if(correct){ qzState.correct++; awardXP(5, "Quiz correct"); }
+  $("#fb").innerHTML = `
+    <div class="card" style="padding:14px;background:${correct?'rgba(52,211,153,.1)':'rgba(248,113,113,.1)'};border-color:${correct?'rgba(52,211,153,.4)':'rgba(248,113,113,.4)'}">
+      <b>${correct?'✅ Correct!':i===-1?'⏱ Time up.':'❌ Not quite.'}</b><br><span class="muted">${q.e}</span>
+    </div>
+    <button class="btn primary" style="margin-top:12px" onclick="qzNext()">${qzState.idx+1===qzState.pool.length?'See results':'Next →'}</button>`;
+}
+function qzNext(){
+  qzState.idx++;
+  if(qzState.idx>=qzState.pool.length){
+    const {correct,pool}=qzState;
+    const pct = Math.round(correct/pool.length*100);
+    if(pct===100) awardXP(20,"Perfect quiz bonus");
+    $("#page").innerHTML = `
+      <div class="card placeholder">
+        <div class="ico-big">${pct>=80?'🏆':pct>=50?'👍':'📚'}</div>
+        <h3>Quiz complete</h3>
+        <p>Score: <b>${correct}/${pool.length}</b> (${pct}%)</p>
+        <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+          <button class="btn primary" onclick="startQuiz()">🔁 New quiz</button>
+          <button class="btn" onclick="navigate('mastery')">🎯 Mastery</button>
+        </div>
+      </div>`;
+    return;
+  }
+  drawQuiz();
+}
+
+/* ============================================================
+   CBT — 20 questions · 20 minutes · anti-cheat
+============================================================ */
+let cbtState=null, cbtTimer=null, cbtWatchers=[];
+function renderCBT(){
+  const hist = (currentUser().cbtHistory||[]).slice().reverse();
+  $("#page").innerHTML = `
+    <div class="card" style="padding:22px">
+      <h3>CBT Mock Exam</h3>
+      <p class="muted" style="margin:6px 0 14px;font-size:13px">20 questions · 20 minutes · anti-cheat monitoring enabled. Do not switch tabs, minimise the window, or open other apps — you get 3 warnings before auto-submit.</p>
+      <button class="btn primary" onclick="startCBT()">Begin exam</button>
+    </div>
+    ${hist.length?`
+    <div class="section-title"><h3>Past attempts</h3></div>
+    <div class="card" style="padding:8px"><table class="table">
+      <thead><tr><th>Date</th><th>Score</th><th>Percentage</th><th>Warnings</th><th>Result</th></tr></thead>
+      <tbody>${hist.map(h=>`<tr>
+        <td>${new Date(h.at).toLocaleString()}</td>
+        <td>${h.correct}/${h.total}</td>
+        <td>${Math.round(h.correct/h.total*100)}%</td>
+        <td>${h.warnings}</td>
+        <td>${h.autoSubmit?'<span class="chip-role" style="background:rgba(248,113,113,.2);color:#fecaca">Auto-submitted</span>':'✓ Completed'}</td>
+      </tr>`).join("")}</tbody>
+    </table></div>`:""}`;
+}
+function startCBT(){
+  const pool = [...QUESTIONS].sort(()=>Math.random()-0.5).slice(0,20);
+  cbtState = { pool, answers:new Array(20).fill(null), idx:0, timeLeft:20*60, warnings:0, autoSubmit:false, running:true };
+  attachAntiCheat();
+  drawCBT();
+  cbtTimer = setInterval(()=>{
+    if(!cbtState || !cbtState.running) return;
+    cbtState.timeLeft--;
+    const t = $("#cbtTimer");
+    if(t){
+      const m = String(Math.floor(cbtState.timeLeft/60)).padStart(2,"0");
+      const s = String(cbtState.timeLeft%60).padStart(2,"0");
+      t.textContent = `${m}:${s}`;
+      t.className = "timer" + (cbtState.timeLeft<=60?" danger":cbtState.timeLeft<=300?" warn":"");
+    }
+    if(cbtState.timeLeft<=0){ finishCBT(false); }
+  },1000);
+}
+function attachAntiCheat(){
+  detachAntiCheat();
+  const warn = (why) => {
+    if(!cbtState || !cbtState.running) return;
+    cbtState.warnings++;
+    toast(`⚠️ Warning ${cbtState.warnings}/3 · ${why}`, "err");
+    if(cbtState.warnings>=3){ finishCBT(true); }
+  };
+  const onVis = () => { if(document.hidden) warn("Tab hidden / minimised"); };
+  const onBlur = () => warn("Window lost focus");
+  const onCtx  = (e) => { e.preventDefault(); warn("Right-click blocked"); };
+  const onKey  = (e) => {
+    if(e.key==="Escape" || (e.ctrlKey && (e.key==="c"||e.key==="v"||e.key==="p"))){
+      e.preventDefault(); warn("Blocked shortcut");
+    }
+  };
+  document.addEventListener("visibilitychange",onVis);
+  window.addEventListener("blur",onBlur);
+  document.addEventListener("contextmenu",onCtx);
+  document.addEventListener("keydown",onKey);
+  cbtWatchers = [
+    ()=>document.removeEventListener("visibilitychange",onVis),
+    ()=>window.removeEventListener("blur",onBlur),
+    ()=>document.removeEventListener("contextmenu",onCtx),
+    ()=>document.removeEventListener("keydown",onKey)
+  ];
+}
+function detachAntiCheat(){ cbtWatchers.forEach(f=>f()); cbtWatchers=[]; }
+function drawCBT(){
+  const {pool,idx,answers,warnings} = cbtState;
+  const q = pool[idx];
+  $("#pageTitle").textContent = "CBT Exam";
+  const dots = pool.map((_,i)=>`<button class="qz-opt" style="display:inline-block;width:36px;padding:6px;margin:2px;text-align:center;${i===idx?'border-color:var(--primary)':''}${answers[i]!=null?';background:rgba(94,234,212,.15)':''}" onclick="cbtGoto(${i})">${i+1}</button>`).join("");
+  $("#page").innerHTML = `
+    <div class="qz-wrap">
+      <div class="qz-meta">
+        <span class="badge">Q ${idx+1}/${pool.length}</span>
+        <span class="badge">${q.t}</span>
+        <span class="badge" style="background:rgba(248,113,113,.15);border-color:rgba(248,113,113,.4)">⚠ ${warnings}/3</span>
+        <span class="timer" id="cbtTimer">20:00</span>
+      </div>
+      <div class="qz-progress"><span style="width:${((idx+1)/pool.length)*100}%"></span></div>
+      <div class="card qz-q">
+        <h3 style="margin-bottom:12px">${q.q}</h3>
+        <div>${q.o.map((o,i)=>`<button class="qz-opt ${answers[idx]===i?'correct':''}" onclick="cbtPick(${i})">${String.fromCharCode(65+i)}. ${o}</button>`).join("")}</div>
+      </div>
+      <div class="card" style="padding:14px;text-align:center">${dots}</div>
+      <div class="row" style="justify-content:space-between">
+        <button class="btn" onclick="cbtNav(-1)" ${idx===0?'disabled':''}>← Previous</button>
+        ${idx===pool.length-1
+          ? `<button class="btn primary" onclick="finishCBT(false)">Submit exam</button>`
+          : `<button class="btn primary" onclick="cbtNav(1)">Next →</button>`}
+      </div>
+    </div>`;
+}
+function cbtPick(i){ cbtState.answers[cbtState.idx] = i; drawCBT(); }
+function cbtNav(step){ cbtState.idx = Math.max(0, Math.min(cbtState.pool.length-1, cbtState.idx+step)); drawCBT(); }
+function cbtGoto(i){ cbtState.idx = i; drawCBT(); }
+function finishCBT(autoSubmit){
+  if(!cbtState || !cbtState.running) return;
+  cbtState.running = false;
+  clearInterval(cbtTimer);
+  detachAntiCheat();
+  const {pool,answers,warnings} = cbtState;
+  let correct = 0;
+  pool.forEach((q,i)=>{
+    const ok = answers[i]===q.a;
+    recordAnswer(q.t, ok);
+    if(ok) correct++;
+  });
+  const pct = Math.round(correct/pool.length*100);
+  const xpEarn = correct*3 + (pct>=80?30:pct>=50?15:0);
+  awardXP(xpEarn, "CBT completed");
+  const u = currentUser();
+  const hist = u.cbtHistory || [];
+  hist.push({at:Date.now(), correct, total:pool.length, warnings, autoSubmit});
+  updateCurrentUser({cbtHistory:hist});
+  $("#pageTitle").textContent = "CBT · Result";
+  $("#page").innerHTML = `
+    <div class="card placeholder">
+      <div class="ico-big">${autoSubmit?'🚫':pct>=80?'🏆':pct>=50?'👍':'📚'}</div>
+      <h3>${autoSubmit?'Auto-submitted (3 warnings)':'Exam submitted'}</h3>
+      <p>Score: <b>${correct}/${pool.length}</b> (${pct}%) · +${xpEarn} XP</p>
+      <p class="muted" style="margin-top:6px">Warnings: ${warnings}/3</p>
+      <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+        <button class="btn primary" onclick="navigate('cbt')">↩ Back to CBT</button>
+        <button class="btn" onclick="navigate('mastery')">🎯 Mastery</button>
+      </div>
+    </div>
+    <div class="section-title"><h3>Review</h3></div>
+    <div class="qz-wrap">
+      ${pool.map((q,i)=>`
+        <div class="card qz-q">
+          <div class="qz-meta"><span class="badge">Q${i+1} · ${q.t}</span>
+            <span class="badge">${answers[i]===q.a?'✅ Correct':answers[i]==null?'⚪ Skipped':'❌ Wrong'}</span></div>
+          <h4 style="margin:8px 0">${q.q}</h4>
+          <p class="muted"><b>Your answer:</b> ${answers[i]!=null?q.o[answers[i]]:'—'}</p>
+          <p class="muted"><b>Correct:</b> ${q.o[q.a]}</p>
+          <p style="margin-top:8px">${q.e}</p>
+        </div>`).join("")}
+    </div>`;
+}
+
+/* ============================================================
+   PERIODIC TABLE
+============================================================ */
+function renderPeriodic(){
+  // Place lanthanides (58-71) in row 9 groups 4-17, actinides (90-103) in row 10 groups 4-17
+  const lookup = (period,group) => {
+    if(period===9 && group>=4 && group<=17){ const z=58+(group-4); return ELEMENTS.find(e=>e[0]===z); }
+    if(period===10 && group>=4 && group<=17){ const z=90+(group-4); return ELEMENTS.find(e=>e[0]===z); }
+    return ELEMENTS.find(e => e[6]===period && e[5]===group);
+  };
+  const cells = [];
+  for(let period=1; period<=10; period++){
+    for(let group=1; group<=18; group++){
+      let el = lookup(period,group);
+      if(!el && period===6 && group===3){
+
+        cells.push(`<button class="pt-cell cat-lanth" onclick="alert('Lanthanides: 57–71')" style="font-size:9px"><div class="num">57–71</div><b>La–Lu</b><div class="nm">Lanthanides</div></button>`);
+        continue;
+      }
+      if(!el && period===7 && group===3){
+        cells.push(`<button class="pt-cell cat-actin" onclick="alert('Actinides: 89–103')" style="font-size:9px"><div class="num">89–103</div><b>Ac–Lr</b><div class="nm">Actinides</div></button>`);
+        continue;
+      }
+      if(!el){ cells.push(`<div class="pt-cell pt-empty"></div>`); continue; }
+      cells.push(`<button class="pt-cell cat-${el[4]}" onclick="showElement(${el[0]})"><div class="num">${el[0]}</div><b>${el[1]}</b><div class="nm">${el[2]}</div></button>`);
+    }
+  }
+  const cats = [
+    ["Alkali","alkali"],["Alkaline earth","alkaline"],["Transition","transition"],
+    ["Post-transition","postmetal"],["Metalloid","metalloid"],["Non-metal","nonmetal"],
+    ["Halogen","halogen"],["Noble gas","noble"],["Lanthanide","lanth"],
+    ["Actinide","actin"],["Unknown","unknown"]
+  ];
+  $("#page").innerHTML = `
+    <div class="card pt-wrap">
+      <div class="pt-grid">${cells.join("")}</div>
+      <div class="pt-legend">${cats.map(([n,c])=>`<span class="cat-${c}">${n}</span>`).join("")}</div>
+    </div>
+    <p class="muted" style="font-size:12px;margin-top:10px">Tap any element for details.</p>`;
+}
+function showElement(z){
+  const e = ELEMENTS.find(x=>x[0]===z); if(!e) return;
+  const catName = {alkali:"Alkali metal",alkaline:"Alkaline earth",transition:"Transition metal",postmetal:"Post-transition metal",metalloid:"Metalloid",nonmetal:"Non-metal",halogen:"Halogen",noble:"Noble gas",lanth:"Lanthanide",actin:"Actinide",unknown:"Unknown properties"}[e[4]];
+  const modal = document.createElement("div");
+  modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;z-index:9999;padding:20px";
+  modal.innerHTML = `
+    <div class="card" style="max-width:420px;width:100%;padding:26px;text-align:center">
+      <div class="pt-cell cat-${e[4]}" style="margin:0 auto 14px;width:110px;height:110px;font-size:14px;cursor:default">
+        <div class="num">${e[0]}</div><b style="font-size:34px">${e[1]}</b><div class="nm" style="font-size:11px">${e[2]}</div>
+      </div>
+      <h3>${e[2]}</h3>
+      <p class="muted" style="margin:6px 0 14px">${catName}</p>
+      <div style="text-align:left;display:grid;gap:6px;font-size:14px">
+        <div><b>Atomic number:</b> ${e[0]}</div>
+        <div><b>Symbol:</b> ${e[1]}</div>
+        <div><b>Atomic mass:</b> ${e[3]} u</div>
+        <div><b>Group:</b> ${e[5]||"—"} · <b>Period:</b> ${e[6]<=7?e[6]:"—"}</div>
+      </div>
+      <button class="btn primary" style="margin-top:16px" onclick="this.closest('div[style]').remove()">Close</button>
+    </div>`;
+  modal.addEventListener("click", (ev)=>{ if(ev.target===modal) modal.remove(); });
+  document.body.appendChild(modal);
+}
+
+/* ============================================================
+   FORMULAE & DICTIONARY (searchable)
+============================================================ */
+function renderFormulae(){
+  $("#page").innerHTML = `
+    <div class="card" style="padding:22px">
+      <h3>Chemistry formulae</h3>
+      <input class="input" id="fSearch" placeholder="Search e.g. sulfuric, NaOH…" oninput="drawFormulae()" style="margin-top:10px"/>
+    </div>
+    <div id="fList" style="margin-top:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px"></div>`;
+  drawFormulae();
+}
+function drawFormulae(){
+  const q = ($("#fSearch")?.value||"").toLowerCase();
+  const items = FORMULAE.filter(([n,f]) => n.toLowerCase().includes(q) || f.toLowerCase().includes(q));
+  $("#fList").innerHTML = items.length? items.map(([n,f])=>`
+    <div class="card" style="padding:16px">
+      <div style="font-size:20px;font-weight:700" class="title-grad">${f}</div>
+      <div class="muted" style="font-size:13px;margin-top:4px">${n}</div>
+    </div>`).join("") : `<div class="card placeholder"><div class="ico-big">🔍</div><h3>No matches</h3></div>`;
+}
+function renderDictionary(){
+  $("#page").innerHTML = `
+    <div class="card" style="padding:22px">
+      <h3>Chemistry dictionary</h3>
+      <input class="input" id="dSearch" placeholder="Search a term…" oninput="drawDictionary()" style="margin-top:10px"/>
+    </div>
+    <div id="dList" style="margin-top:14px;display:grid;gap:10px"></div>`;
+  drawDictionary();
+}
+function drawDictionary(){
+  const q = ($("#dSearch")?.value||"").toLowerCase();
+  const items = DICTIONARY.filter(([t,d]) => t.toLowerCase().includes(q) || d.toLowerCase().includes(q));
+  $("#dList").innerHTML = items.length? items.map(([t,d])=>`
+    <div class="card" style="padding:16px">
+      <h4>${t}</h4>
+      <p class="muted" style="margin-top:6px;line-height:1.55">${d}</p>
+    </div>`).join("") : `<div class="card placeholder"><div class="ico-big">🔍</div><h3>No matches</h3></div>`;
+}
+
+/* ============================================================
+   CALCULATOR
+============================================================ */
+let calcTab = "molar";
+function renderCalc(){
+  const tabs = [
+    ["molar","Molar mass"],["dilute","Dilution"],
+    ["gas","Ideal gas"],["moles","Moles ↔ mass"]
+  ];
+  $("#page").innerHTML = `
+    <div class="card" style="padding:22px">
+      <div class="calc-tabs">
+        ${tabs.map(([id,l])=>`<button class="${id===calcTab?'active':''}" onclick="calcSwitch('${id}')">${l}</button>`).join("")}
+      </div>
+      <div id="calcBody"></div>
+    </div>`;
+  drawCalcBody();
+}
+function calcSwitch(t){ calcTab=t; drawCalcBody(); $$(".calc-tabs button").forEach(b=>b.classList.toggle("active", b.textContent && b.onclick.toString().includes(`'${t}'`))); }
+const ATOMIC = Object.fromEntries(ELEMENTS.map(e=>[e[1], e[3]]));
+function parseFormula(f){
+  // Supports parentheses & subscripts (regular digits or subscript chars).
+  const norm = f.replace(/[₀-₉]/g, ch => String("₀₁₂₃₄₅₆₇₈₉".indexOf(ch)));
+  let i=0;
+  function parseUnit(){
+    const counts = {};
+    while(i<norm.length){
+      const ch = norm[i];
+      if(ch==="("){ i++; const sub=parseUnit(); if(norm[i]===")") i++;
+        const num=readNum(); for(const k in sub) counts[k]=(counts[k]||0)+sub[k]*num; }
+      else if(ch===")") return counts;
+      else if(/[A-Z]/.test(ch)){
+        let sym=ch; i++;
+        if(/[a-z]/.test(norm[i]||"")){ sym+=norm[i]; i++; }
+        const num=readNum();
+        counts[sym]=(counts[sym]||0)+num;
+      } else i++;
+    }
+    return counts;
+  }
+  function readNum(){ let s=""; while(/\d/.test(norm[i]||"")){ s+=norm[i]; i++; } return s?parseInt(s):1; }
+  return parseUnit();
+}
+function drawCalcBody(){
+  const body = $("#calcBody");
+  if(calcTab==="molar"){
+    body.innerHTML = `
+      <div class="field"><label class="label">Formula (e.g. H2SO4, Ca(OH)2)</label>
+        <input class="input" id="mmF" placeholder="H2SO4"/></div>
+      <button class="btn primary" onclick="doMolar()">Calculate</button>
+      <div class="calc-out" id="mmOut">—</div>`;
+  } else if(calcTab==="dilute"){
+    body.innerHTML = `
+      <p class="muted" style="font-size:13px;margin-bottom:10px">Solve C₁V₁ = C₂V₂ — leave one field blank.</p>
+      <div class="two-col">
+        <div class="field"><label class="label">C₁ (mol/L)</label><input class="input" id="c1"/></div>
+        <div class="field"><label class="label">V₁ (mL)</label><input class="input" id="v1"/></div>
+      </div>
+      <div class="two-col">
+        <div class="field"><label class="label">C₂ (mol/L)</label><input class="input" id="c2"/></div>
+        <div class="field"><label class="label">V₂ (mL)</label><input class="input" id="v2"/></div>
+      </div>
+      <button class="btn primary" onclick="doDilute()">Solve for missing</button>
+      <div class="calc-out" id="diOut">—</div>`;
+  } else if(calcTab==="gas"){
+    body.innerHTML = `
+      <p class="muted" style="font-size:13px;margin-bottom:10px">PV = nRT (R = 0.0821 L·atm/mol·K). Leave one blank.</p>
+      <div class="two-col">
+        <div class="field"><label class="label">P (atm)</label><input class="input" id="gP"/></div>
+        <div class="field"><label class="label">V (L)</label><input class="input" id="gV"/></div>
+      </div>
+      <div class="two-col">
+        <div class="field"><label class="label">n (mol)</label><input class="input" id="gN"/></div>
+        <div class="field"><label class="label">T (K)</label><input class="input" id="gT"/></div>
+      </div>
+      <button class="btn primary" onclick="doGas()">Solve</button>
+      <div class="calc-out" id="gOut">—</div>`;
+  } else {
+    body.innerHTML = `
+      <p class="muted" style="font-size:13px;margin-bottom:10px">n = m / M. Provide any two.</p>
+      <div class="field"><label class="label">Formula (for M)</label><input class="input" id="mnF" placeholder="NaCl"/></div>
+      <div class="two-col">
+        <div class="field"><label class="label">Mass m (g)</label><input class="input" id="mnM"/></div>
+        <div class="field"><label class="label">Moles n</label><input class="input" id="mnN"/></div>
+      </div>
+      <button class="btn primary" onclick="doMoles()">Calculate</button>
+      <div class="calc-out" id="mnOut">—</div>`;
+  }
+}
+function doMolar(){
+  try{
+    const f = $("#mmF").value.trim(); if(!f) throw 0;
+    const counts = parseFormula(f);
+    let total = 0, lines = [];
+    for(const s in counts){
+      const m = ATOMIC[s]; if(!m) throw new Error("Unknown element: "+s);
+      const sub = counts[s]*m;
+      total += sub;
+      lines.push(`${s} × ${counts[s]} = ${sub.toFixed(3)} g/mol`);
+    }
+    $("#mmOut").textContent = lines.join("\n") + `\n──────────\nMolar mass = ${total.toFixed(3)} g/mol`;
+  }catch(e){ $("#mmOut").textContent = "Error: "+(e.message||"invalid formula"); }
+}
+function doDilute(){
+  const v = id => { const x = parseFloat($("#"+id).value); return isNaN(x)?null:x; };
+  const c1=v("c1"),v1=v("v1"),c2=v("c2"),v2=v("v2");
+  const vals=[c1,v1,c2,v2]; const missing=vals.filter(x=>x===null).length;
+  if(missing!==1){ $("#diOut").textContent="Leave exactly one field blank."; return; }
+  let out="";
+  if(c1===null){ const r=(c2*v2)/v1; out=`C₁ = C₂V₂ / V₁ = (${c2}×${v2})/${v1} = ${r.toFixed(4)} mol/L`; }
+  else if(v1===null){ const r=(c2*v2)/c1; out=`V₁ = C₂V₂ / C₁ = ${r.toFixed(3)} mL`; }
+  else if(c2===null){ const r=(c1*v1)/v2; out=`C₂ = C₁V₁ / V₂ = ${r.toFixed(4)} mol/L`; }
+  else { const r=(c1*v1)/c2; out=`V₂ = C₁V₁ / C₂ = ${r.toFixed(3)} mL`; }
+  $("#diOut").textContent = out;
+}
+function doGas(){
+  const R=0.0821, v=id=>{const x=parseFloat($("#"+id).value); return isNaN(x)?null:x;};
+  const P=v("gP"),V=v("gV"),n=v("gN"),T=v("gT");
+  const missing=[P,V,n,T].filter(x=>x===null).length;
+  if(missing!==1){ $("#gOut").textContent="Leave exactly one field blank."; return; }
+  let out="";
+  if(P===null) out=`P = nRT/V = ${(n*R*T/V).toFixed(4)} atm`;
+  else if(V===null) out=`V = nRT/P = ${(n*R*T/P).toFixed(4)} L`;
+  else if(n===null) out=`n = PV/RT = ${(P*V/(R*T)).toFixed(4)} mol`;
+  else out=`T = PV/nR = ${(P*V/(n*R)).toFixed(2)} K`;
+  $("#gOut").textContent = out;
+}
+function doMoles(){
+  try{
+    const f=$("#mnF").value.trim(); if(!f) throw new Error("Formula required");
+    const counts=parseFormula(f); let M=0;
+    for(const s in counts){ if(!ATOMIC[s]) throw new Error("Unknown element "+s); M+=counts[s]*ATOMIC[s]; }
+    const m=parseFloat($("#mnM").value), n=parseFloat($("#mnN").value);
+    let out=`Molar mass of ${f} = ${M.toFixed(3)} g/mol\n`;
+    if(!isNaN(m) && isNaN(n)) out += `n = m/M = ${m}/${M.toFixed(3)} = ${(m/M).toFixed(4)} mol`;
+    else if(isNaN(m) && !isNaN(n)) out += `m = n×M = ${n}×${M.toFixed(3)} = ${(n*M).toFixed(4)} g`;
+    else if(!isNaN(m) && !isNaN(n)) out += `Given both — check: n = ${(m/M).toFixed(4)} mol vs ${n}`;
+    else out += "Enter either mass or moles.";
+    $("#mnOut").textContent = out;
+  }catch(e){ $("#mnOut").textContent="Error: "+e.message; }
+}
+
+/* ============================================================
+   MASTERY
+============================================================ */
+function renderMastery(){
+  const u = ensureStats();
+  const stats = u.topicStats || {};
+  const rows = TOPIC_NOTES.map(t=>{
+    const s = stats[t.id] || {attempts:0,correct:0};
+    const acc = s.attempts? Math.round(s.correct/s.attempts*100) : 0;
+    const level = s.attempts<3 ? "New" : acc>=80 ? "Mastered" : acc>=50 ? "Learning" : "Weak";
+    return {id:t.id, title:t.title, attempts:s.attempts, correct:s.correct, acc, level};
+  });
+  const mastered = rows.filter(r=>r.level==="Mastered");
+  const weak = rows.filter(r=>r.level==="Weak" || (r.level==="Learning" && r.acc<70));
+  const totalAttempts = rows.reduce((a,r)=>a+r.attempts,0);
+  const totalCorrect = rows.reduce((a,r)=>a+r.correct,0);
+  const overall = totalAttempts? Math.round(totalCorrect/totalAttempts*100) : 0;
+
+  $("#page").innerHTML = `
+    <div class="grid cards-4">
+      <div class="card stat"><div class="glow" style="background:#5eead4"></div><span class="k">Overall accuracy</span><span class="v">${overall}%</span></div>
+      <div class="card stat"><div class="glow" style="background:#7c9bff"></div><span class="k">Mastered</span><span class="v">${mastered.length}</span></div>
+      <div class="card stat"><div class="glow" style="background:#f472b6"></div><span class="k">Needs work</span><span class="v">${weak.length}</span></div>
+      <div class="card stat"><div class="glow" style="background:#fbbf24"></div><span class="k">Questions answered</span><span class="v">${totalAttempts}</span></div>
+    </div>
+
+    <div class="section-title"><h3>Per-topic mastery</h3></div>
+    <div class="card" style="padding:22px">
+      ${rows.map(r=>`
+        <div class="mastery-row">
+          <div>
+            <div style="font-weight:600">${r.title}</div>
+            <div class="muted" style="font-size:12px">${r.correct}/${r.attempts} correct · <b style="color:${r.level==='Mastered'?'#34d399':r.level==='Learning'?'#7c9bff':r.level==='Weak'?'#f87171':'#96a0c8'}">${r.level}</b></div>
+          </div>
+          <div class="m-bar"><span style="width:${r.acc}%"></span></div>
+          <div><button class="btn small" onclick="startPractice('${r.id}')">Practice</button></div>
+        </div>`).join("")}
+    </div>
+
+    <div class="section-title"><h3>Recommendations</h3></div>
+    <div class="grid cards-2">
+      ${(weak.length?weak:rows.filter(r=>r.attempts===0).slice(0,4)).slice(0,4).map(r=>`
+        <div class="card" style="padding:18px">
+          <span class="badge">${r.attempts===0?'Start here':'Focus area'}</span>
+          <h4 style="margin:8px 0">${r.title}</h4>
+          <p class="muted" style="font-size:13px">${r.attempts===0?'You have not attempted this topic yet.':`Your accuracy is ${r.acc}%. Review notes and re-practise.`}</p>
+          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn small" onclick="notesActive='${r.id}';navigate('notes')">📘 Read notes</button>
+            <button class="btn small primary" onclick="startPractice('${r.id}')">✏️ Practise</button>
+          </div>
+        </div>`).join("") || '<div class="card placeholder"><div class="ico-big">🎉</div><h3>All caught up!</h3><p>You are performing well across all topics.</p></div>'}
+    </div>`;
+}
+
+/* ============================================================
+   ROUTER WIRE-UP — override placeholders
+============================================================ */
+Object.assign(PAGES, {
+  notes: renderNotes,
+  flashcards: renderFlashcards,
+  practice: renderPractice,
+  quiz: renderQuiz,
+  cbt: renderCBT,
+  periodic: renderPeriodic,
+  formulae: renderFormulae,
+  dictionary: renderDictionary,
+  calc: renderCalc,
+  mastery: renderMastery
+});
+
+// Safety: if the user leaves CBT via nav, detach anti-cheat watchers.
+const _origNavigate = navigate;
+window.navigate = function(page){
+  if(cbtState && cbtState.running && page!=="cbt"){
+    if(!confirm("An exam is in progress. Leave and auto-submit?")) return;
+    finishCBT(true);
+  }
+  _origNavigate(page);
+};
+</script>
+
+</body>
+</html>
